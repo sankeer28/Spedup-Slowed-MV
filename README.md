@@ -27,3 +27,16 @@ Do  ```pip install -r requirements.txt```
 
 Contributions are welcome! Please open an issue or submit a pull request with any improvements or bug fixes.
 
+<details>
+<summary>Examples</summary>
+
+
+https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/22cac793-a34f-4453-9e81-9455060ac358
+
+https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/8f3a09bc-39cd-4f4f-980f-d2ad478c4d4f
+
+https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/070be00a-1ff8-4d46-9662-2a6df9a0b4b7
+
+
+
+</details>
