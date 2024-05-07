@@ -11,7 +11,7 @@ A Python script that automates the creation of nightcore-style/sped-up videos or
 4. The final video will be saved in the `outputs` directory.
 
 ## Dependencies
-
+- [Python 3.10.0](https://www.python.org/downloads/release/python-3100/): requires this specific version of Python 
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp): A youtube-dl fork for additional features and fixes
 - [requests](https://pypi.org/project/requests/): HTTP library for making requests
 - [ffmpeg](https://ffmpeg.org/): Multimedia framework for handling multimedia data
