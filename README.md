@@ -1,7 +1,8 @@
 
 # Spedup/Slowed down Music Video Maker
 
-A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining anime wallpapers or cat wallpapers with audio extracted from YouTube videos.
+A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from YouTube videos.
+![carbon (1)](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/b9e3e6ec-1d69-4b5e-b0c5-4e3dd0d36886)
 
 
 2. Follow the prompts to enter the YouTube video URL, wallpaper choice, and speed preference.
@@ -11,10 +12,10 @@ A Python script that automates the creation of nightcore-style/sped-up videos or
 4. The final video will be saved in the `outputs` directory.
 
 ## Dependencies
+View insatlled_packages.txt to see list of all packages if you run into any errors
 - [Python 3.10.0](https://www.python.org/downloads/release/python-3100/): requires this specific version of Python 
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp): A youtube-dl fork for additional features and fixes
-- [requests](https://pypi.org/project/requests/): HTTP library for making requests
-- [ffmpeg](https://ffmpeg.org/): Multimedia framework for handling multimedia data
+- [ffmpeg](https://ffmpeg.org/): Add to system patch. Used ffmpeg version n4.4.4-6-gd5fa6e3a91-20230604 at time of development
 
 ## Contributing
 
