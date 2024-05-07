@@ -2,7 +2,7 @@
 # Spedup/Slowed down Music Video Maker
 
 A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from YouTube videos.
-![carbon (1)](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/b9e3e6ec-1d69-4b5e-b0c5-4e3dd0d36886)
+![carbon (2)](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/4e0fa887-4631-4fe1-8c5b-c3c6e0b60f91)
 
 
 2. Follow the prompts to enter the YouTube video URL, wallpaper choice, and speed preference.
