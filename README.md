@@ -14,6 +14,7 @@ A Python script that automates the creation of nightcore-style/sped-up videos or
 ## Dependencies
 View installed_packages.txt to see list of all packages if you run into any errors, or simply do  ```pip install -r requirements.txt```
 - [Python 3.10.0](https://www.python.org/downloads/release/python-3100/): requires this specific version of Python
+  - On linux you can do ```sudo apt install python3.10```
   - Create a virtual environment, then to run 
     ```.venv\Scripts\activate.bat```
     ``` .venv\Scripts\python main.py ``` 
