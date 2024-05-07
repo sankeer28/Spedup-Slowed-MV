@@ -12,7 +12,7 @@ A Python script that automates the creation of nightcore-style/sped-up videos or
 4. The final video will be saved in the `outputs` directory.
 
 ## Dependencies
-View installed_packages.txt to see list of all packages if you run into any errors, or simply do  ```pip install -r requirements.txt```
+Do  ```pip install -r requirements.txt```
 - [Python 3.10.0](https://www.python.org/downloads/release/python-3100/): requires this specific version of Python
   - On linux you can do ```sudo apt install python3.10``` then ``` python3 main.py```
 - [ffmpeg](https://ffmpeg.org/): Add to system path. Used ffmpeg version n4.4.4-6-gd5fa6e3a91-20230604 at time of development
