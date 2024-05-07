@@ -20,7 +20,7 @@ Do  ```pip install -r requirements.txt```
   ```sudo apt install ffmpeg```
   - macOS (brew): 
       ```brew install ffmpeg```
-  - Windows (chocolatey), google how to do it: 
+  - Windows (chocolatey), other ways on google: 
       ```choco install ffmpeg```
 
 ## Contributing
