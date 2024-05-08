@@ -1,11 +1,11 @@
 
 # Spedup/Slowed down Music Video Maker
 
-A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from YouTube videos. This will work with other sites, full list can be found [here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
+A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from URLs from supported websites like YouTube, YouTube music, and soundcloud. This will work with other sites, full list can be found [here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
 ![carbon (2)](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/4e0fa887-4631-4fe1-8c5b-c3c6e0b60f91)
 ## Features
 
-- Download YouTube videos, with support for [other sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
+- Downloads from URLs of [supported websites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
 - Extract audio from videos
 - Fetch background images from multiple sources
 - Combine audio and images to create videos
