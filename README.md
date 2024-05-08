@@ -20,8 +20,8 @@ Do  ```pip install -r requirements.txt```
   ```sudo apt install ffmpeg```
   - macOS (brew): 
       ```brew install ffmpeg```
-  - Windows (chocolatey), other ways on google: 
-      ```choco install ffmpeg```
+  - Windows: tutorials can be found on google: 
+
 
 ### [Replit Demo](https://replit.com/@SankeerthikanNi/Spedup-Slowed-MV)
 This will be much slower compared to running locally
