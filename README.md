@@ -20,7 +20,7 @@ Do  ```pip install -r requirements.txt```
   ```sudo apt install ffmpeg```
   - macOS (brew): 
       ```brew install ffmpeg```
-  - Windows: tutorials can be found on google: 
+  - Windows: tutorials can be found on google like [this](https://www.wikihow.com/Install-FFmpeg-on-Windows): 
 
 
 ### [Replit Demo](https://replit.com/@SankeerthikanNi/Spedup-Slowed-MV)
