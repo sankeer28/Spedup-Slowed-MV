@@ -4,7 +4,7 @@
 A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from YouTube videos.
 ![carbon (2)](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/4e0fa887-4631-4fe1-8c5b-c3c6e0b60f91)
 
-
+1. run ``` python main.py``` or ``` python3 main.py```. If using local ffmpeg use   ``` python local_ffmpeg.py```
 2. Follow the prompts to enter the YouTube video URL, wallpaper choice, and speed preference.
 
 3. The script will then download the video, extract audio, fetch the wallpaper, and combine them to create the nightcore-style video.
