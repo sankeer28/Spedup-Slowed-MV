@@ -13,7 +13,7 @@ A Python script that automates the creation of nightcore-style/sped-up videos or
 
 ## Dependencies
 Do  ```pip install -r requirements.txt```
-- Tested and working Python versions: [Python 3.10.0](https://www.python.org/downloads/release/python-3100/), [3.12.3](https://www.python.org/downloads/release/python-3123/)
+- Tested and working Python versions: [Python 3.10.0](https://www.python.org/downloads/release/python-3100/), [3.12.3](https://www.python.org/downloads/release/python-3123/). does **NOT** work on 3.11
   - On linux you can do ```sudo apt install python3.10``` then ``` python3 main.py```
 - [ffmpeg](https://ffmpeg.org/): Add to system path. 
   - Linux (apt): 
