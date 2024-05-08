@@ -23,7 +23,8 @@ Do  ```pip install -r requirements.txt```
   - Windows (chocolatey), other ways on google: 
       ```choco install ffmpeg```
 
-
+### [Replit Demo](https://replit.com/@SankeerthikanNi/Spedup-Slowed-MV)
+This will be much slower compared to running locally
 <details>
 <summary>
 Examples
@@ -38,6 +39,7 @@ https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/8f3a09bc-39cd-4f4
 ### Anime Spedup
 https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/f124f1a7-52ed-45db-88f0-7f0edf7a159a
 
+https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/9fd4c20c-1b03-4819-a5b3-8fdc4a67df2a
 
 ### Cat Spedup
 https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/070be00a-1ff8-4d46-9662-2a6df9a0b4b7
