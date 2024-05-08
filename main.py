@@ -67,7 +67,7 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title,
         combine_video_audio_image(image_file, audio_file, output_video, video_title, api_choice)
 
 def main():
-    ascii_art = """
+    ascii_art = r"""
    _____                __               _____ __                       __   __  ____    __
   / ___/____  ___  ____/ /_  ______     / ___// /___ _      _____  ____/ /  /  |/  / |  / /
   \__ \/ __ \/ _ \/ __  / / / / __ \    \__ \/ / __ \ | /| / / _ \/ __  /  / /|_/ /| | / / 
