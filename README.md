@@ -18,7 +18,7 @@ Do  ```pip install -r requirements.txt```
 - [ffmpeg](https://ffmpeg.org/): Add to system path. 
   - Linux (apt): 
   ```sudo apt install ffmpeg```
-  - macOS (brew): 
+  - macOS (via homebrew): 
       ```brew install ffmpeg```
   - Windows: tutorials can be found on google like [this](https://www.wikihow.com/Install-FFmpeg-on-Windows): 
 
