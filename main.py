@@ -11,7 +11,7 @@ def download_video(url, output_file):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
-def extract_audio(video_file, output_audio, pitch=1.5, slow_down=False):
+def extract_audio(video_file, output_audio, pitch=1.4, slow_down=False):
     if slow_down:
         pitch = 0.9
     command = f'ffmpeg -i "{video_file}" -vn -af "asetrate=44100*{pitch},aresample=44100" -acodec libmp3lame "{output_audio}"'
