@@ -11,6 +11,7 @@ A Python script that automates the creation of nightcore-style/sped-up videos or
 - Fetch background images from multiple sources
 - Combine audio and images to create videos
 - Each video has the title of the song in the bottom right corner
+- Option to download multiple urls from a list and apply same options to all of them
 ## How to run
 1. run ``` python main.py``` or ``` python3 main.py```.
 2. Follow the prompts to enter the YouTube video URL, wallpaper choice, and speed preference.
