@@ -33,7 +33,7 @@ Do  ```pip install -r requirements.txt``` If you run into errors try ```python3 
 
 
 ### [Replit Demo](https://replit.com/@SankeerthikanNi/Spedup-Slowed-MV)
-This will be much slower compared to running locally
+This will be much slower compared to running locally if using the free version of replit
 <details>
 <summary>
 Examples
