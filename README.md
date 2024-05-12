@@ -31,14 +31,16 @@ Do  ```pip install -r requirements.txt``` If you run into errors try ```python3 
   ```sudo apt install ffmpeg```
   - macOS (via homebrew): 
       ```brew install ffmpeg```
-  - Windows: tutorials can be found on google like [this](https://www.wikihow.com/Install-FFmpeg-on-Windows): 
+  - Windows: tutorials can be found on Google like [this](https://www.wikihow.com/Install-FFmpeg-on-Windows): 
 
 
 ### [Replit Demo](https://replit.com/@SankeerthikanNi/Spedup-Slowed-MV)
-This will be much slower compared to running locally if using the free version of replit
+This will be much slower compared to running locally if using the free version of Replit
+## Examples
+
 <details>
 <summary>
-Examples
+expand
 </summary>
 
 ### Anime Slowed
