@@ -60,7 +60,8 @@ https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/956394c8-a519-449
 
 
 ### Anime Spedup
-https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/f124f1a7-52ed-45db-88f0-7f0edf7a159a
+
+https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/6c7c3915-1930-4ae4-b4e1-c806084e507c
 
 https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/9fd4c20c-1b03-4819-a5b3-8fdc4a67df2a
 
