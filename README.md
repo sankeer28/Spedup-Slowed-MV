@@ -11,10 +11,10 @@
 ### A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from URLs from supported websites like **YouTube**, **YouTube music**, and **Soundcloud**. This will work with other sites, full list can be found [here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
 ![gif](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/52e46e16-7421-42f0-bd5e-ac603290e9af)
 ## Features
-- Downloads from URLs of [supported websites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
-- Extract audio from videos
-- Fetch background images from multiple sources
-- Combine audio and images to create videos
+- Downloads from URLs of [supported websites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) using *yt-dlp*
+- Extract audio from videos using *ffmpeg*
+- Fetch background images from multiple sources [(1)](https://pic.re/image), [(2)](https://api.thecatapi.com/v1/images/search), [(3)](https://random.imagecdn.app/v1/image?width=1920&height=1080&format=json)
+- Combine audio and images to create videos using *ffmpeg*
 - Each video has the title of the song in the bottom right corner
 - Option to download multiple URLs from a list and apply the same options to all of them
 - Option to download all the video URLs from a Youtube channel to a text file with restriction on max length while also skipping Youtube Shorts
