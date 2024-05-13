@@ -20,14 +20,17 @@
 - Option to download multiple URLs from a list and apply the same options to all of them
 - Option to download all the video URLs from a Youtube channel to a text file with restriction on max length while also skipping Youtube Shorts
 ## How to run
-1. run ``` python main.py``` or ``` python3 main.py```.
-2. Follow the prompts to enter the YouTube video URL, wallpaper choice, and speed preference.
-3. The script will then download the video, extract audio, fetch the wallpaper, and combine them to create the nightcore-style video.
-4. The final video will be saved in the `outputs` directory.
+1. clone repository  ```git clone https://github.com/sankeer28/Spedup-Slowed-MV.git```
+2. open folder ```cd Spedup-Slowed-MV ```
+3. install dependencies ```pip install -r requirements.txt``` and ffmpeg
+4. run ```python main.py``` or ```python3 main.py```.
+5. Follow the prompts to enter the YouTube video URL, wallpaper choice, and speed preference.
+6. The script will then download the video, extract audio, fetch the wallpaper, and combine them to create the nightcore-style video.
+7. The final video will be saved in the `outputs` directory.
 ## Dependencies
 Do  ```pip install -r requirements.txt``` If you run into errors try ```python3 -m pip install yt-dlp```
 - Tested and working Python versions: Python 3.10.0,3.11.8, 3.12.3
-  - On linux you can do ```sudo apt install python3.10``` then ``` python3 main.py```
+  - On linux you can do ```sudo apt install python3.10``` then ```python3 main.py```
 - [ffmpeg](https://ffmpeg.org/): Add to system path. 
   - Linux (apt): 
   ```sudo apt install ffmpeg```
