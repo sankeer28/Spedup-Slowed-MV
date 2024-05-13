@@ -8,14 +8,9 @@
     /____/ .___/\___/\__,_/\__,_/ .___/   /____/_/\____/|__/|__/\___/\__,_/  /_/  /_/  |___/
         /_/                    /_/ 
 ```
-A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from URLs from supported websites like **YouTube**, **YouTube music**, and **Soundcloud**. This will work with other sites, full list can be found [here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
+### A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from URLs from supported websites like **YouTube**, **YouTube music**, and **Soundcloud**. This will work with other sites, full list can be found [here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
 ![gif](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/52e46e16-7421-42f0-bd5e-ac603290e9af)
-
-## If you run into any bugs: 
-- old.py: does not have bulk url download feature and does not have the feature to download all videos from channel
-- old1.py: does not have the feature to download all videos from channel
 ## Features
-
 - Downloads from URLs of [supported websites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
 - Extract audio from videos
 - Fetch background images from multiple sources
@@ -26,11 +21,8 @@ A Python script that automates the creation of nightcore-style/sped-up videos or
 ## How to run
 1. run ``` python main.py``` or ``` python3 main.py```.
 2. Follow the prompts to enter the YouTube video URL, wallpaper choice, and speed preference.
-
 3. The script will then download the video, extract audio, fetch the wallpaper, and combine them to create the nightcore-style video.
-
 4. The final video will be saved in the `outputs` directory.
-
 ## Dependencies
 Do  ```pip install -r requirements.txt``` If you run into errors try ```python3 -m pip install yt-dlp```
 - Tested and working Python versions: Python 3.10.0,3.11.8, 3.12.3
@@ -42,7 +34,9 @@ Do  ```pip install -r requirements.txt``` If you run into errors try ```python3 
       ```brew install ffmpeg```
   - Windows: tutorials can be found on Google like [this](https://www.wikihow.com/Install-FFmpeg-on-Windows): 
 
-
+## Older Versions: 
+- old.py: does not have bulk url download feature and does not have the feature to download all videos from channel
+- old1.py: does not have the feature to download all videos from channel
 ### [Replit Demo](https://replit.com/@SankeerthikanNi/Spedup-Slowed-MV)
 This will be much slower compared to running locally if using the free version of Replit
 ## Examples
