@@ -61,9 +61,13 @@ https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/956394c8-a519-449
 
 ### Anime Spedup
 
-https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/6c7c3915-1930-4ae4-b4e1-c806084e507c
+
+https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/ccd01716-2b52-4d7c-9d2d-22f962615652
 
 https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/9fd4c20c-1b03-4819-a5b3-8fdc4a67df2a
+
+https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/f5738fd4-90f4-4908-9b0a-3a9a15b5062d
+
 
 ### Cat Spedup
 https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/070be00a-1ff8-4d46-9662-2a6df9a0b4b7
