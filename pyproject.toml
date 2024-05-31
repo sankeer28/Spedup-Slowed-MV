@@ -10,10 +10,10 @@ readme = "README.md"
 license = {file = "LICENSE.txt"}
 requires-python = ">=3.10"
 authors = [
-  {name = "sankeer", email = "sankeer28@gmail.com"}
+  {name = "Your Name", email = "your.email@example.com"}
 ]
 maintainers = [
-  {name = "sankeer", email = "sankeer28@gmail.com"}
+  {name = "Your Name", email = "your.email@example.com"}
 ]
 keywords = ["nightcore", "video", "automation", "YouTube", "Soundcloud"]
 classifiers = [
@@ -42,4 +42,4 @@ Repository = "https://github.com/sankeer28/Spedup-Slowed-MV"
 "Bug Tracker" = "https://github.com/sankeer28/Spedup-Slowed-MV/issues"
 
 [project.scripts]
-spedup-slowed-mv = "main:main"
+spedup_slowed_mv = "main:main"
