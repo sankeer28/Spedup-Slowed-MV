@@ -16,7 +16,7 @@
 - User can input query for gif search.
 <details>
 <summary>
-expand
+examples
 </summary>
        
 https://github.com/user-attachments/assets/d4d58936-934e-412e-a609-5981f80cf296
@@ -72,7 +72,7 @@ This will be much slower compared to running locally if using the free version o
 
 <details>
 <summary>
-expand
+examples
 </summary>
 
 ### Anime Slowed
