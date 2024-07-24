@@ -46,7 +46,7 @@ def combine_video_audio_image(image_file, audio_file, output_video):
 
 
 def download_random_gif(search_query, output_gif):
-    TENOR_API_KEY = 'AIzaSyB57W0j_zUPWHWGsv2Lkg9OKfC1FkFPcPk'
+    TENOR_API_KEY = ''
     try:
         params = {
             'q': search_query,
