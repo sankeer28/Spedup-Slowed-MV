@@ -3,6 +3,7 @@ import yt_dlp
 import requests
 import re
 import subprocess
+import random
 
 def download_video(url, output_file):
     ydl_opts = {
@@ -43,23 +44,35 @@ def combine_video_audio_image(image_file, audio_file, output_video):
     except Exception as e:
         print(f"Error combining video and audio: {e}")
 
+
 def download_random_gif(search_query, output_gif):
-    TENOR_API_KEY = ''
+    TENOR_API_KEY = 'AIzaSyB57W0j_zUPWHWGsv2Lkg9OKfC1FkFPcPk'
     try:
         params = {
             'q': search_query,
             'key': TENOR_API_KEY,
-            'limit': 1,
+            'limit': 50,  
             'media_filter': 'minimal',
             'contentfilter': 'high'
         }
         response = requests.get('https://tenor.googleapis.com/v2/search', params=params)
         response.raise_for_status()
         data = response.json()
-        if not data['results']:
+        
+        
+        print("Response Data:", data)
+        
+        if not data.get('results'):
             print("No GIFs found for the given query.")
             return None
-        gif_url = data['results'][0]['media_formats']['gif']['url']
+        
+        gif_urls = [result['media_formats']['gif']['url'] for result in data['results']]
+        
+        if not gif_urls:
+            print("No GIF URLs found.")
+            return None
+        
+        gif_url = random.choice(gif_urls)
         gif_data = requests.get(gif_url).content
         with open(output_gif, 'wb') as f:
             f.write(gif_data)
@@ -67,6 +80,8 @@ def download_random_gif(search_query, output_gif):
     except Exception as e:
         print(f"Error fetching GIF: {e}")
         return None
+
+
 
 def process_single_url():
     video_url = input("Enter the video URL: ")
