@@ -48,6 +48,8 @@ https://github.com/user-attachments/assets/dab6bf93-6ef7-43f2-8a73-16cc0ffb1cec
 - Each video has the title of the song in the bottom right corner
 - Option to download multiple URLs from a list and apply the same options to all of them
 - Option to download all the video URLs from a Youtube channel to a text file with restriction on max length while also skipping Youtube Shorts
+## Next Steps
+- Allow the artist of the image/gif to be credited
 ## How to run
 1. clone repository  ```git clone https://github.com/sankeer28/Spedup-Slowed-MV.git```
 2. open folder ```cd Spedup-Slowed-MV ```
