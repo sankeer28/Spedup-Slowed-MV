@@ -8,3 +8,6 @@ requests
 urllib3
 websockets
 yt-dlp
+pillow
+customtkinter
+CTkMessagebox
