@@ -34,8 +34,57 @@ def check_nvidia_gpu():
     except:
         return False
 
+# Add function to optimize hardware acceleration parameters based on GPU
+def get_optimal_hw_params():
+    """Get optimal hardware acceleration parameters based on system capabilities."""
+    if not HW_ACCEL_AVAILABLE:
+        return {
+            "hw_decode_args": "",
+            "hw_encode_codec": "libx264",
+            "hw_encode_preset": "-preset medium",
+            "threads": ""
+        }
+    
+    try:
+        # Try to get GPU model to optimize parameters
+        result = subprocess.run(['nvidia-smi', '--query-gpu=name', '--format=csv,noheader'], 
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        gpu_model = result.stdout.strip()
+        
+        print(f"Detected GPU: {gpu_model}")
+        
+        # Set GPU-specific parameters - updated for compatibility
+        # For newer GPUs with better compatibility
+        if any(x in gpu_model.lower() for x in ['rtx', '30', '40', 'a5000', 'a6000']):
+            return {
+                "hw_decode_args": "-hwaccel cuda -hwaccel_output_format cuda",
+                "hw_encode_codec": "h264_nvenc",
+                "hw_encode_preset": "-preset p2 -rc constqp -qp 19",
+                "threads": "-threads 16"
+            }
+        else:
+            # More conservative settings for older GPUs
+            return {
+                "hw_decode_args": "-hwaccel cuda -hwaccel_output_format cuda",
+                "hw_encode_codec": "h264_nvenc",
+                "hw_encode_preset": "-preset p4 -rc constqp -qp 23",
+                "threads": "-threads 8"
+            }
+    except Exception as e:
+        print(f"Error optimizing hardware parameters: {e}")
+        # Default parameters with better compatibility
+        return {
+            "hw_decode_args": "-hwaccel cuda -hwaccel_output_format cuda",
+            "hw_encode_codec": "h264_nvenc", 
+            "hw_encode_preset": "-preset p4 -rc constqp -qp 23",
+            "threads": "-threads 8"
+        }
+
 # Global flag for hardware acceleration
 HW_ACCEL_AVAILABLE = check_nvidia_gpu()
+
+# Global hardware acceleration parameters
+HW_PARAMS = get_optimal_hw_params()
 
 def download_video(url, output_file):
     ydl_opts = {
@@ -194,9 +243,9 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             return False
         
         # Set hardware acceleration parameters
-        # For image operations, we'll use CPU to avoid compatibility issues
-        hw_decode = "-hwaccel cuda -hwaccel_output_format cuda -threads 8 " if HW_ACCEL_AVAILABLE else ""
-        hw_encode = "h264_nvenc -preset p4 -tune hq " if HW_ACCEL_AVAILABLE else "libx264 "
+        hw_decode = HW_PARAMS["hw_decode_args"] if HW_ACCEL_AVAILABLE else ""
+        hw_encode_codec = HW_PARAMS["hw_encode_codec"] if HW_ACCEL_AVAILABLE else "libx264"
+        hw_encode_preset = HW_PARAMS["hw_encode_preset"] if HW_ACCEL_AVAILABLE else "-preset medium"
         
         # Get audio duration for GIF looping
         try:
@@ -212,8 +261,12 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             video_file = "looped_video.mp4"
             
             # First approach: Use -stream_loop to properly loop the GIF for the full audio duration
+            # Corrected command with proper placement of hwaccel before input
             print("Converting GIF to looped video...")
-            command = f'ffmpeg -y {hw_decode}-stream_loop -1 -i "{image_file}" -t {audio_duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v {hw_encode} -r 24 "{video_file}"'
+            hw_input = HW_PARAMS["hw_decode_args"] if HW_ACCEL_AVAILABLE else ""
+            command = f'ffmpeg -y {hw_input} -stream_loop -1 -i "{image_file}" -t {audio_duration} ' \
+                     f'-vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p ' \
+                     f'-c:v {hw_encode_codec} {hw_encode_preset} -r 24 "{video_file}"'
             print(f"Running command: {command}")
             result = os.system(command)
             
@@ -221,8 +274,10 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             if result != 0 or not os.path.exists(video_file) or os.path.getsize(video_file) == 0:
                 print("Error with first method. Trying alternative GIF loop method...")
                 
-                # Second approach: Use -ignore_loop 0 to respect GIF loop metadata
-                command = f'ffmpeg -y {hw_decode}-ignore_loop 0 -i "{image_file}" -t {audio_duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v {hw_encode} -r 24 "{video_file}"'
+                # Second approach: Fixed command with proper placement of hwaccel
+                command = f'ffmpeg -y {hw_input} -ignore_loop 0 -i "{image_file}" -t {audio_duration} ' \
+                          f'-vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p ' \
+                          f'-c:v {hw_encode_codec} {hw_encode_preset} -r 24 "{video_file}"'
                 result = os.system(command)
                 
                 # If that fails too, try a third approach
@@ -236,18 +291,20 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
                         loop_count = int(audio_duration / gif_duration) + 1
                         print(f"GIF duration: {gif_duration}s, need to loop {loop_count} times")
                         
-                        # Use explicit loop count
-                        command = f'ffmpeg -y {hw_decode}-stream_loop {loop_count} -i "{image_file}" -t {audio_duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v {hw_encode} -r 24 "{video_file}"'
+                        # Use explicit loop count - fixed command
+                        command = f'ffmpeg -y {hw_input} -stream_loop {loop_count} -i "{image_file}" -t {audio_duration} ' \
+                                 f'-vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p ' \
+                                 f'-c:v {hw_encode_codec} {hw_encode_preset} -r 24 "{video_file}"'
                         result = os.system(command)
-                    except:
-                        print("Error calculating GIF duration.")
+                    except Exception as e:
+                        print(f"Error calculating GIF duration: {e}")
                         result = 1
                 
                 # If all GIF methods fail, fall back to static image
                 if result != 0 or not os.path.exists(video_file) or os.path.getsize(video_file) == 0:
                     print("All GIF conversion methods failed. Falling back to static image...")
-                    # Extract first frame
-                    command = f'ffmpeg -y {hw_decode}-i "{image_file}" -vframes 1 "fallback_frame.jpg"'
+                    # Extract first frame - fixed command
+                    command = f'ffmpeg -y {hw_input} -i "{image_file}" -vframes 1 "fallback_frame.jpg"'
                     os.system(command)
                     if os.path.exists("fallback_frame.jpg"):
                         return combine_video_audio_image("fallback_frame.jpg", audio_file, output_video, video_title, api_choice)
@@ -267,7 +324,7 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
                 if video_duration < audio_duration - 1:  # Allow 1 second tolerance
                     print("Looped video is too short. Creating with explicit longer duration...")
                     # Use a longer duration to ensure we cover the full audio
-                    command = f'ffmpeg -y {hw_decode}-stream_loop -1 -i "{image_file}" -t {audio_duration*1.5} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v {hw_encode} -r 24 "{video_file}"'
+                    command = f'ffmpeg -y {hw_input} -stream_loop -1 -i "{image_file}" -t {audio_duration*1.5} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v {hw_encode_codec} {hw_encode_preset} -r 24 "{video_file}"'
                     os.system(command)
             except:
                 print("Could not verify video duration, continuing anyway.")
@@ -276,7 +333,10 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             if video_title:
                 text = re.sub(r'\(.*?\)', '', re.sub(r'[\\/:*?"<>|]', '', video_title.replace("_", " ").replace("nightcore", "").replace("(Official Audio)", "").replace("slowed down", "").replace("(Official Lyric Video)", "").replace("(Lyrics)", "").replace("(Official Video)", "").replace("(Official Music Video)", "").replace("(Official Visualizer)", "").strip()))
                 text_file = "temp_with_text.mp4"
-                text_command = f'ffmpeg -y {hw_decode}-i "{video_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" -c:v {hw_encode} -codec:a copy "{text_file}"'
+                # Fixed command
+                text_command = f'ffmpeg -y {hw_input} -i "{video_file}" ' \
+                             f'-vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" ' \
+                             f'-c:v {hw_encode_codec} {hw_encode_preset} -codec:a copy "{text_file}"'
                 print(f"Adding text overlay: {text}")
                 result = os.system(text_command)
                 
@@ -289,9 +349,11 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
                 else:
                     print("Failed to add text overlay. Using video without text.")
 
-            # Combine video with audio
+            # Combine video with audio - fixed command
             print("Combining video with audio...")
-            final_command = f'ffmpeg -y {hw_decode}-i "{video_file}" -i "{audio_file}" -map 0:v:0 -map 1:a:0 -c:v {hw_encode} -c:a aac -strict experimental -b:a 192k -shortest "{output_video}"'
+            final_command = f'ffmpeg -y {hw_input} -i "{video_file}" -i "{audio_file}" ' \
+                          f'-map 0:v:0 -map 1:a:0 -c:v {hw_encode_codec} {hw_encode_preset} ' \
+                          f'-c:a aac -b:a 320k -ar 48000 -strict experimental -shortest "{output_video}"'
             result = os.system(final_command)
             
             # Clean up
@@ -327,16 +389,25 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
                 
                 # Check if the text image was created successfully
                 if os.path.exists(text_image_file) and os.path.getsize(text_image_file) > 0:
-                    command = f'ffmpeg -y {hw_decode}-loop 1 -i "{text_image_file}" -i "{audio_file}" -c:v {hw_encode} -c:a aac -strict experimental -b:a 192k -shortest "{output_video}"'
+                    hw_input = HW_PARAMS["hw_decode_args"] if HW_ACCEL_AVAILABLE else ""
+                    command = f'ffmpeg -y {hw_input} -loop 1 -i "{text_image_file}" -i "{audio_file}" ' \
+                           f'-c:v {hw_encode_codec} {hw_encode_preset} -c:a aac -b:a 320k -ar 48000 ' \
+                           f'-strict experimental -shortest "{output_video}"'
                     os.system(command)
                     os.remove(text_image_file)
                 else:
                     # Fallback if text overlay fails
                     print("Warning: Failed to create text overlay, using image without text.")
-                    command = f'ffmpeg -y {hw_decode}-loop 1 -i "{resized_image_file}" -i "{audio_file}" -c:v {hw_encode} -c:a aac -strict experimental -b:a 192k -shortest "{output_video}"'
+                    hw_input = HW_PARAMS["hw_decode_args"] if HW_ACCEL_AVAILABLE else ""
+                    command = f'ffmpeg -y {hw_input} -loop 1 -i "{resized_image_file}" -i "{audio_file}" ' \
+                           f'-c:v {hw_encode_codec} {hw_encode_preset} -c:a aac -b:a 320k -ar 48000 ' \
+                           f'-strict experimental -shortest "{output_video}"'
                     os.system(command)
             else:
-                command = f'ffmpeg -y {hw_decode}-loop 1 -i "{resized_image_file}" -i "{audio_file}" -c:v {hw_encode} -c:a aac -strict experimental -b:a 192k -shortest "{output_video}"'
+                hw_input = HW_PARAMS["hw_decode_args"] if HW_ACCEL_AVAILABLE else ""
+                command = f'ffmpeg -y {hw_input} -loop 1 -i "{resized_image_file}" -i "{audio_file}" ' \
+                       f'-c:v {hw_encode_codec} {hw_encode_preset} -c:a aac -b:a 320k -ar 48000 ' \
+                       f'-strict experimental -shortest "{output_video}"'
                 os.system(command)
             
             if resized_image_file != image_file and os.path.exists(resized_image_file):
@@ -359,9 +430,12 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
 def main():
     # Display hardware acceleration status
     if HW_ACCEL_AVAILABLE:
-        print("NVIDIA GPU hardware acceleration is ENABLED")
+        print(f"NVIDIA GPU hardware acceleration is ENABLED")
+        print(f"Using encoder: {HW_PARAMS['hw_encode_codec']} with {HW_PARAMS['hw_encode_preset']}")
+        print(f"Audio quality: High (320kbps, 48kHz)")
     else:
         print("NVIDIA GPU hardware acceleration is NOT AVAILABLE - using CPU")
+        print("Audio quality: High (320kbps, 48kHz)")
     
     ascii_art = r"""
        _____                __               _____ __                       __   __  ____    __
@@ -443,7 +517,7 @@ def process_multiple_urls():
             process_single_video(video_url, api_choice, speed_up, search_query)
 
 def download_audio(url, output_file):
-    """Download audio directly from a video URL."""
+    """Download audio directly from a video URL with high quality."""
     # Remove .mp3 extension if present to prevent double extension
     if output_file.endswith('.mp3'):
         output_base = output_file[:-4]
@@ -455,7 +529,7 @@ def download_audio(url, output_file):
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192',
+            'preferredquality': '320',  # Highest quality
         }],
         'outtmpl': output_base,
     }
@@ -483,14 +557,17 @@ def download_audio(url, output_file):
         return None
 
 def modify_audio_speed(input_audio, output_audio, pitch=1.4, slow_down=False):
-    """Modify audio speed and pitch."""
+    """Modify audio speed and pitch with improved quality."""
     if slow_down:
         pitch = 0.9
     
-    # Add hardware acceleration for decoding
-    hw_args = "-hwaccel cuda -hwaccel_output_format cuda -threads 8 " if HW_ACCEL_AVAILABLE else ""
+    # Add hardware acceleration and quality settings
+    hw_args = HW_PARAMS["hw_decode_args"] if HW_ACCEL_AVAILABLE else ""
     
-    command = f'ffmpeg {hw_args}-i "{input_audio}" -af "asetrate=44100*{pitch},aresample=44100" -acodec libmp3lame "{output_audio}"'
+    # Enhanced audio processing command with normalization and high quality 
+    command = (f'ffmpeg {hw_args} -i "{input_audio}" '
+              f'-af "asetrate=48000*{pitch},aresample=48000,loudnorm=I=-14:LRA=11:TP=-1.5" '
+              f'-b:a 320k -acodec libmp3lame -q:a 0 "{output_audio}"')
     os.system(command)
 
 def process_single_video(video_url, api_choice, speed_up, search_query):
