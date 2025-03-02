@@ -50,7 +50,7 @@ def extract_audio(video_file, output_audio, pitch=1.4, slow_down=False):
         pitch = 0.9
     
     # Add hardware acceleration for decoding
-    hw_args = "-hwaccel cuda -hwaccel_output_format cuda " if HW_ACCEL_AVAILABLE else ""
+    hw_args = "-hwaccel cuda -hwaccel_output_format cuda -threads 8 " if HW_ACCEL_AVAILABLE else ""
     
     command = f'ffmpeg {hw_args}-i "{video_file}" -vn -af "asetrate=44100*{pitch},aresample=44100" -acodec libmp3lame "{output_audio}"'
     os.system(command)
@@ -194,7 +194,8 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             return False
         
         # Set hardware acceleration parameters
-        hw_decode = "-hwaccel cuda -hwaccel_output_format cuda " if HW_ACCEL_AVAILABLE else ""
+        # For image operations, we'll use CPU to avoid compatibility issues
+        hw_decode = "-hwaccel cuda -hwaccel_output_format cuda -threads 8 " if HW_ACCEL_AVAILABLE else ""
         hw_encode = "h264_nvenc -preset p4 -tune hq " if HW_ACCEL_AVAILABLE else "libx264 "
         
         # Get audio duration for GIF looping
@@ -307,7 +308,9 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             # Handle static image background
             print("Processing static image background...")
             resized_image_file = "resized_background.jpg"
-            resize_command = f'ffmpeg -y {hw_decode}-i "{image_file}" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" "{resized_image_file}"'
+            
+            # For image operations, let's bypass hardware acceleration to avoid compatibility issues
+            resize_command = f'ffmpeg -y -i "{image_file}" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -frames:v 1 "{resized_image_file}"'
             os.system(resize_command)
             
             if not os.path.exists(resized_image_file) or os.path.getsize(resized_image_file) == 0:
@@ -317,9 +320,9 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             if video_title:
                 text = re.sub(r'\(.*?\)', '', re.sub(r'[\\/:*?"<>|]', '', video_title.replace("_", " ").replace("nightcore", "").replace("(Official Audio)", "").replace("slowed down", "").replace("(Official Lyric Video)", "").replace("(Lyrics)", "").replace("(Official Video)", "").replace("(Official Music Video)", "").replace("(Official Visualizer)", "").strip()))
                 
-                # Create image with text directly
+                # Create image with text directly - no hardware acceleration for single image
                 text_image_file = "text_overlay.jpg"
-                text_command = f'ffmpeg -y {hw_decode}-i "{resized_image_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" -frames:v 1 "{text_image_file}"'
+                text_command = f'ffmpeg -y -i "{resized_image_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" -frames:v 1 "{text_image_file}"'
                 os.system(text_command)
                 
                 # Check if the text image was created successfully
@@ -439,6 +442,57 @@ def process_multiple_urls():
         if video_url:
             process_single_video(video_url, api_choice, speed_up, search_query)
 
+def download_audio(url, output_file):
+    """Download audio directly from a video URL."""
+    # Remove .mp3 extension if present to prevent double extension
+    if output_file.endswith('.mp3'):
+        output_base = output_file[:-4]
+    else:
+        output_base = output_file
+        
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'outtmpl': output_base,
+    }
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        
+        # Return the correct filename with extension
+        expected_filename = f"{output_base}.mp3"
+        if os.path.exists(expected_filename):
+            print(f"Audio downloaded successfully: {expected_filename}")
+            return expected_filename
+        else:
+            print(f"Warning: Expected file {expected_filename} not found")
+            # Try to find any mp3 file that starts with the output_base
+            for file in os.listdir():
+                if file.startswith(output_base) and file.endswith('.mp3'):
+                    print(f"Found alternative audio file: {file}")
+                    return file
+            print("Error: Could not find downloaded audio file")
+            return None
+    except Exception as e:
+        print(f"Error downloading audio: {e}")
+        return None
+
+def modify_audio_speed(input_audio, output_audio, pitch=1.4, slow_down=False):
+    """Modify audio speed and pitch."""
+    if slow_down:
+        pitch = 0.9
+    
+    # Add hardware acceleration for decoding
+    hw_args = "-hwaccel cuda -hwaccel_output_format cuda -threads 8 " if HW_ACCEL_AVAILABLE else ""
+    
+    command = f'ffmpeg {hw_args}-i "{input_audio}" -af "asetrate=44100*{pitch},aresample=44100" -acodec libmp3lame "{output_audio}"'
+    os.system(command)
+
 def process_single_video(video_url, api_choice, speed_up, search_query):
     video_info = yt_dlp.YoutubeDL().extract_info(video_url, download=False)
     
@@ -447,19 +501,28 @@ def process_single_video(video_url, api_choice, speed_up, search_query):
     else:
         video_title = "slowed_down_" + re.sub(r'[\\/:*?"<>|]', '', video_info['title'].replace(" ", "_"))
     
-    video_filename = "video.mp4"
-    audio_filename = "audio.mp3"
+    # Download audio directly
+    downloaded_audio_base = "original_audio"
+    audio_filename = "modified_audio.mp3"
     
     # Set appropriate file extension based on background type
     image_filename = "background.gif" if api_choice == "4" else "background.jpg"
     output_video = f"{video_title}.mp4"
 
     print(f"\nProcessing: {video_info['title']}")
-    print(f"Downloading video...")
-    download_video(video_url, video_filename)
+    print(f"Downloading audio...")
+    downloaded_audio = download_audio(video_url, downloaded_audio_base)
     
-    print(f"Extracting and modifying audio...")
-    extract_audio(video_filename, audio_filename, slow_down=not speed_up)
+    if not downloaded_audio or not os.path.exists(downloaded_audio):
+        print(f"Error: Failed to download audio for {video_info['title']}")
+        return
+    
+    print(f"Modifying audio speed/pitch...")
+    modify_audio_speed(downloaded_audio, audio_filename, slow_down=not speed_up)
+    
+    if not os.path.exists(audio_filename):
+        print(f"Error: Failed to create modified audio file {audio_filename}")
+        return
     
     print(f"Downloading {'GIF' if api_choice == '4' else 'image'} background...")
     download_cat_image(image_filename, api_choice, search_query)
@@ -468,9 +531,11 @@ def process_single_video(video_url, api_choice, speed_up, search_query):
     success = combine_video_audio_image(image_filename, audio_filename, output_video, video_title, api_choice)
     
     # Clean up temporary files
-    for file in [video_filename, audio_filename]:
-        if os.path.exists(file):
-            os.remove(file)
+    if downloaded_audio and os.path.exists(downloaded_audio):
+        os.remove(downloaded_audio)
+    
+    if os.path.exists(audio_filename):
+        os.remove(audio_filename)
     
     if os.path.exists(image_filename):
         os.remove(image_filename)
