@@ -16,9 +16,6 @@
 ![image](https://github.com/user-attachments/assets/637386ee-9cb2-40a7-bf00-03197efe92ca)
 For GUI use gui.py
 ![gif](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/52e46e16-7421-42f0-bd5e-ac603290e9af)
-## gif.py
-- Uses GIFs as the background using the tenor v2 api
-- User can input query for gif search.
 <details>
 <summary>
 examples
@@ -57,6 +54,8 @@ https://github.com/user-attachments/assets/84ddf208-5ce8-4fc0-9508-e35ff0c13f1f
 - Each video has the title of the song in the bottom right corner
 - Option to download multiple URLs from a list and apply the same options to all of them
 - Option to download all the video URLs from a Youtube channel to a text file with restriction on max length while also skipping Youtube Shorts
+- Uses GIFs as the background using the tenor v2 api
+- User can input query for gif search.
 ## Next Steps
 - Allow the artist of the image/gif to be credited
 ## How to run
@@ -81,6 +80,7 @@ Do  ```pip install -r requirements.txt``` If you run into errors try ```python3 
 ## Older Versions: 
 - old.py: does not have bulk url download feature and does not have the feature to download all videos from channel
 - old1.py: does not have the feature to download all videos from channel
+- old3.py: does not have gif feature built in
 ### [Replit Demo](https://replit.com/@SankeerthikanNi/Spedup-Slowed-MV)
 This will be much slower compared to running locally if using the free version of Replit
 ## Examples
