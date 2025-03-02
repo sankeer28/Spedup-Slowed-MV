@@ -6,6 +6,96 @@ import subprocess
 import random
 import shlex
 
+def detect_gpu_acceleration():
+    """Detect available GPU acceleration methods for FFmpeg."""
+    encoders = {}
+    
+    try:
+        # Check for NVIDIA GPU (NVENC)
+        nvidia_cmd = 'ffmpeg -hide_banner -encoders | findstr nvenc'
+        if os.name != 'nt':  # If not Windows
+            nvidia_cmd = 'ffmpeg -hide_banner -encoders | grep nvenc'
+        nvidia_result = subprocess.run(nvidia_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if nvidia_result.returncode == 0 and b'h264_nvenc' in nvidia_result.stdout:
+            encoders['nvidia'] = {
+                'hwaccel': 'cuda',
+                'encoder': 'h264_nvenc',
+                'preset': 'p1',  # Fast preset for NVENC
+                'priority': 1  # Highest priority
+            }
+    
+        # Check for Intel Quick Sync Video (QSV)
+        qsv_cmd = 'ffmpeg -hide_banner -encoders | findstr qsv'
+        if os.name != 'nt':
+            qsv_cmd = 'ffmpeg -hide_banner -encoders | grep qsv'
+        qsv_result = subprocess.run(qsv_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if qsv_result.returncode == 0 and b'h264_qsv' in qsv_result.stdout:
+            encoders['intel'] = {
+                'hwaccel': 'qsv',
+                'encoder': 'h264_qsv',
+                'preset': 'faster',
+                'priority': 2
+            }
+    
+        # Check for AMD AMF
+        amf_cmd = 'ffmpeg -hide_banner -encoders | findstr amf'
+        if os.name != 'nt':
+            amf_cmd = 'ffmpeg -hide_banner -encoders | grep amf'
+        amf_result = subprocess.run(amf_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if amf_result.returncode == 0 and b'h264_amf' in amf_result.stdout:
+            encoders['amd'] = {
+                'hwaccel': 'amf',
+                'encoder': 'h264_amf',
+                'preset': 'faster',
+                'priority': 3
+            }
+    except Exception as e:
+        print(f"Error detecting GPU acceleration: {e}")
+    
+    # Always include CPU as fallback
+    encoders['cpu'] = {
+        'hwaccel': '',
+        'encoder': 'libx264',
+        'preset': 'medium',
+        'priority': 4
+    }
+    
+    # Sort by priority
+    sorted_encoders = sorted(encoders.items(), key=lambda x: x[1]['priority'])
+    return [v for k, v in sorted_encoders]
+
+def run_ffmpeg_with_gpu_fallback(command_template, input_args, output_file):
+    """Try to run ffmpeg command with GPU acceleration, falling back to CPU if needed."""
+    encoders = detect_gpu_acceleration()
+    
+    for encoder in encoders:
+        hwaccel = f"-hwaccel {encoder['hwaccel']} " if encoder['hwaccel'] else ""
+        video_codec = f"-c:v {encoder['encoder']} "
+        preset = f"-preset {encoder['preset']} " if encoder['preset'] else ""
+        
+        # Build the command with the current encoder - making sure ffmpeg comes first
+        command = command_template.format(
+            hwaccel=hwaccel, 
+            video_codec=video_codec,
+            preset=preset,
+            **input_args
+        )
+        
+        print(f"Trying encoder: {encoder['encoder']}")
+        print(f"Running command: {command}")
+        
+        result = os.system(command)
+        
+        # Check if the command was successful and output file exists with content
+        if result == 0 and os.path.exists(output_file) and os.path.getsize(output_file) > 0:
+            print(f"Successfully processed with {encoder['encoder']}")
+            return True
+        
+        print(f"Failed with {encoder['encoder']}, trying next option...")
+    
+    print("All encoding options failed")
+    return False
+
 def download_video(url, output_file):
     ydl_opts = {
         'outtmpl': output_file,
@@ -71,7 +161,7 @@ def download_cat_image(output_image, api_choice, search_query=None):
         print(f"Error fetching image: {e}")
 
 def download_random_gif(search_query, output_gif):
-    TENOR_API_KEY = ''
+    TENOR_API_KEY = 'AIzaSyB0w1-_22Dk7_yyH62m2Tu8mRPJdKvcA7Y'
     try:
         params = {
             'q': search_query,
@@ -173,20 +263,30 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             
             # First approach: Use -stream_loop to properly loop the GIF for the full audio duration
             print("Converting GIF to looped video...")
-            command = f'ffmpeg -y -stream_loop -1 -i "{image_file}" -t {audio_duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v libx264 -r 24 "{video_file}"'
-            print(f"Running command: {command}")
-            result = os.system(command)
+            # Fix command template to ensure ffmpeg comes first
+            command_template = 'ffmpeg {hwaccel}-y -stream_loop -1 -i "{input_file}" -t {duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p {video_codec}{preset}"{output_file}"'
+            
+            success = run_ffmpeg_with_gpu_fallback(command_template, {
+                'input_file': image_file,
+                'duration': audio_duration,
+                'output_file': video_file
+            }, video_file)
             
             # Check if the video was created successfully
-            if result != 0 or not os.path.exists(video_file) or os.path.getsize(video_file) == 0:
+            if not success:
                 print("Error with first method. Trying alternative GIF loop method...")
                 
                 # Second approach: Use -ignore_loop 0 to respect GIF loop metadata
-                command = f'ffmpeg -y -ignore_loop 0 -i "{image_file}" -t {audio_duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v libx264 -r 24 "{video_file}"'
-                result = os.system(command)
+                command_template = 'ffmpeg {hwaccel}-y -ignore_loop 0 -i "{input_file}" -t {duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p {video_codec}{preset}"{output_file}"'
+                
+                success = run_ffmpeg_with_gpu_fallback(command_template, {
+                    'input_file': image_file,
+                    'duration': audio_duration,
+                    'output_file': video_file
+                }, video_file)
                 
                 # If that fails too, try a third approach
-                if result != 0 or not os.path.exists(video_file) or os.path.getsize(video_file) == 0:
+                if not success:
                     print("Error with second method. Trying third GIF loop method...")
                     
                     # Extract GIF info to calculate loop count needed
@@ -197,14 +297,20 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
                         print(f"GIF duration: {gif_duration}s, need to loop {loop_count} times")
                         
                         # Use explicit loop count
-                        command = f'ffmpeg -y -stream_loop {loop_count} -i "{image_file}" -t {audio_duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v libx264 -r 24 "{video_file}"'
-                        result = os.system(command)
+                        command_template = 'ffmpeg {hwaccel}-y -stream_loop {loop_count} -i "{input_file}" -t {duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p {video_codec}{preset}"{output_file}"'
+                        
+                        success = run_ffmpeg_with_gpu_fallback(command_template, {
+                            'input_file': image_file,
+                            'duration': audio_duration,
+                            'loop_count': loop_count,
+                            'output_file': video_file
+                        }, video_file)
                     except:
                         print("Error calculating GIF duration.")
-                        result = 1
+                        success = False
                 
                 # If all GIF methods fail, fall back to static image
-                if result != 0 or not os.path.exists(video_file) or os.path.getsize(video_file) == 0:
+                if not success:
                     print("All GIF conversion methods failed. Falling back to static image...")
                     # Extract first frame
                     command = f'ffmpeg -y -i "{image_file}" -vframes 1 "fallback_frame.jpg"'
@@ -227,8 +333,13 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
                 if video_duration < audio_duration - 1:  # Allow 1 second tolerance
                     print("Looped video is too short. Creating with explicit longer duration...")
                     # Use a longer duration to ensure we cover the full audio
-                    command = f'ffmpeg -y -stream_loop -1 -i "{image_file}" -t {audio_duration*1.5} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v libx264 -r 24 "{video_file}"'
-                    os.system(command)
+                    command_template = 'ffmpeg {hwaccel}-y -stream_loop -1 -i "{input_file}" -t {duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p {video_codec}{preset}"{output_file}"'
+                    
+                    run_ffmpeg_with_gpu_fallback(command_template, {
+                        'input_file': image_file,
+                        'duration': audio_duration*1.5,
+                        'output_file': video_file
+                    }, video_file)
             except:
                 print("Could not verify video duration, continuing anyway.")
             
@@ -236,12 +347,18 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             if video_title:
                 text = re.sub(r'\(.*?\)', '', re.sub(r'[\\/:*?"<>|]', '', video_title.replace("_", " ").replace("nightcore", "").replace("(Official Audio)", "").replace("slowed down", "").replace("(Official Lyric Video)", "").replace("(Lyrics)", "").replace("(Official Video)", "").replace("(Official Music Video)", "").replace("(Official Visualizer)", "").strip()))
                 text_file = "temp_with_text.mp4"
-                text_command = f'ffmpeg -y -i "{video_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" -codec:a copy "{text_file}"'
+                
+                command_template = 'ffmpeg {hwaccel}-y -i "{input_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" {video_codec}{preset}-codec:a copy "{output_file}"'
+                
                 print(f"Adding text overlay: {text}")
-                result = os.system(text_command)
+                success = run_ffmpeg_with_gpu_fallback(command_template, {
+                    'input_file': video_file,
+                    'text': text,
+                    'output_file': text_file
+                }, text_file)
                 
                 # Check if text overlay was successful
-                if result == 0 and os.path.exists(text_file) and os.path.getsize(text_file) > 0:
+                if success:
                     # Delete the original file first, then rename
                     if os.path.exists(video_file):
                         os.remove(video_file)
@@ -251,15 +368,20 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
 
             # Combine video with audio
             print("Combining video with audio...")
-            final_command = f'ffmpeg -y -i "{video_file}" -i "{audio_file}" -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -strict experimental -b:a 192k -shortest "{output_video}"'
-            result = os.system(final_command)
+            command_template = 'ffmpeg {hwaccel}-y -i "{input_video}" -i "{input_audio}" -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
+            
+            success = run_ffmpeg_with_gpu_fallback(command_template, {
+                'input_video': video_file,
+                'input_audio': audio_file,
+                'output_file': output_video
+            }, output_video)
             
             # Clean up
             if os.path.exists(video_file):
                 os.remove(video_file)
                 
             # Verify output video was created
-            if result != 0 or not os.path.exists(output_video) or os.path.getsize(output_video) == 0:
+            if not success:
                 print("Failed to create final video with GIF background.")
                 return False
                 
@@ -268,10 +390,15 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             # Handle static image background
             print("Processing static image background...")
             resized_image_file = "resized_background.jpg"
-            resize_command = f'ffmpeg -y -i "{image_file}" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" "{resized_image_file}"'
-            os.system(resize_command)
             
-            if not os.path.exists(resized_image_file) or os.path.getsize(resized_image_file) == 0:
+            command_template = 'ffmpeg {hwaccel}-y -i "{input_file}" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {video_codec}{preset}"{output_file}"'
+            
+            resize_success = run_ffmpeg_with_gpu_fallback(command_template, {
+                'input_file': image_file,
+                'output_file': resized_image_file
+            }, resized_image_file)
+            
+            if not resize_success:
                 print(f"Failed to resize image. Using original image.")
                 resized_image_file = image_file
             
@@ -280,22 +407,44 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
                 
                 # Create image with text directly
                 text_image_file = "text_overlay.jpg"
-                text_command = f'ffmpeg -y -i "{resized_image_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" -frames:v 1 "{text_image_file}"'
-                os.system(text_command)
+                
+                command_template = 'ffmpeg {hwaccel}-y -i "{input_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" {video_codec}{preset}-frames:v 1 "{output_file}"'
+                
+                text_success = run_ffmpeg_with_gpu_fallback(command_template, {
+                    'input_file': resized_image_file,
+                    'text': text,
+                    'output_file': text_image_file
+                }, text_image_file)
                 
                 # Check if the text image was created successfully
-                if os.path.exists(text_image_file) and os.path.getsize(text_image_file) > 0:
-                    command = f'ffmpeg -y -loop 1 -i "{text_image_file}" -i "{audio_file}" -c:v libx264 -c:a aac -strict experimental -b:a 192k -shortest "{output_video}"'
-                    os.system(command)
+                if text_success:
+                    command_template = 'ffmpeg {hwaccel}-y -loop 1 -i "{input_image}" -i "{input_audio}" {video_codec}{preset}-c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
+                    
+                    success = run_ffmpeg_with_gpu_fallback(command_template, {
+                        'input_image': text_image_file,
+                        'input_audio': audio_file,
+                        'output_file': output_video
+                    }, output_video)
+                    
                     os.remove(text_image_file)
                 else:
                     # Fallback if text overlay fails
                     print("Warning: Failed to create text overlay, using image without text.")
-                    command = f'ffmpeg -y -loop 1 -i "{resized_image_file}" -i "{audio_file}" -c:v libx264 -c:a aac -strict experimental -b:a 192k -shortest "{output_video}"'
-                    os.system(command)
+                    command_template = 'ffmpeg {hwaccel}-y -loop 1 -i "{input_image}" -i "{input_audio}" {video_codec}{preset}-c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
+                    
+                    success = run_ffmpeg_with_gpu_fallback(command_template, {
+                        'input_image': resized_image_file,
+                        'input_audio': audio_file,
+                        'output_file': output_video
+                    }, output_video)
             else:
-                command = f'ffmpeg -y -loop 1 -i "{resized_image_file}" -i "{audio_file}" -c:v libx264 -c:a aac -strict experimental -b:a 192k -shortest "{output_video}"'
-                os.system(command)
+                command_template = 'ffmpeg {hwaccel}-y -loop 1 -i "{input_image}" -i "{input_audio}" {video_codec}{preset}-c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
+                
+                success = run_ffmpeg_with_gpu_fallback(command_template, {
+                    'input_image': resized_image_file,
+                    'input_audio': audio_file,
+                    'output_file': output_video
+                }, output_video)
             
             if resized_image_file != image_file and os.path.exists(resized_image_file):
                 os.remove(resized_image_file)
