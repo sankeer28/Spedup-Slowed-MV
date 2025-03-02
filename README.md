@@ -80,6 +80,7 @@ Do  ```pip install -r requirements.txt``` If you run into errors try ```python3 
 ## Older Versions: 
 - old.py: does not have bulk url download feature and does not have the feature to download all videos from channel
 - old1.py: does not have the feature to download all videos from channel
+- old2.py: only has gif generation feature
 - old3.py: does not have gif feature built in
 ### [Replit Demo](https://replit.com/@SankeerthikanNi/Spedup-Slowed-MV)
 This will be much slower compared to running locally if using the free version of Replit
