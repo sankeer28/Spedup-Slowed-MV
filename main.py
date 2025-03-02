@@ -7,48 +7,73 @@ import random
 import shlex
 
 def detect_gpu_acceleration():
-    """Detect available GPU acceleration methods for FFmpeg."""
+    """Detect available GPU acceleration methods for FFmpeg, prioritizing NVIDIA."""
     encoders = {}
     
+    # First, detect what hardware accelerations are supported
+    supported_hwaccels = []
     try:
-        # Check for NVIDIA GPU (NVENC)
-        nvidia_cmd = 'ffmpeg -hide_banner -encoders | findstr nvenc'
-        if os.name != 'nt':  # If not Windows
-            nvidia_cmd = 'ffmpeg -hide_banner -encoders | grep nvenc'
-        nvidia_result = subprocess.run(nvidia_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if nvidia_result.returncode == 0 and b'h264_nvenc' in nvidia_result.stdout:
-            encoders['nvidia'] = {
-                'hwaccel': 'cuda',
-                'encoder': 'h264_nvenc',
-                'preset': 'p1',  # Fast preset for NVENC
-                'priority': 1  # Highest priority
-            }
+        hwaccel_cmd = 'ffmpeg -hide_banner -hwaccels'
+        hwaccel_result = subprocess.run(hwaccel_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if hwaccel_result.returncode == 0:
+            # Parse the output to get supported hardware accelerations
+            lines = hwaccel_result.stdout.strip().split('\n')
+            if len(lines) > 1:  # First line is typically "Hardware acceleration methods:"
+                for line in lines[1:]:
+                    hwaccel = line.strip()
+                    if hwaccel and not hwaccel.startswith('Hardware'):
+                        supported_hwaccels.append(hwaccel)
+            
+            print(f"Supported hardware accelerations: {', '.join(supported_hwaccels)}")
+    except Exception as e:
+        print(f"Error detecting hardware accelerations: {e}")
     
-        # Check for Intel Quick Sync Video (QSV)
-        qsv_cmd = 'ffmpeg -hide_banner -encoders | findstr qsv'
-        if os.name != 'nt':
-            qsv_cmd = 'ffmpeg -hide_banner -encoders | grep qsv'
-        qsv_result = subprocess.run(qsv_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if qsv_result.returncode == 0 and b'h264_qsv' in qsv_result.stdout:
-            encoders['intel'] = {
-                'hwaccel': 'qsv',
-                'encoder': 'h264_qsv',
-                'preset': 'faster',
-                'priority': 2
-            }
+    try:
+        # Check for NVIDIA GPU (NVENC) if CUDA is supported
+        if 'cuda' in supported_hwaccels:
+            nvidia_cmd = 'ffmpeg -hide_banner -encoders | findstr nvenc'
+            if os.name != 'nt':  # If not Windows
+                nvidia_cmd = 'ffmpeg -hide_banner -encoders | grep nvenc'
+            nvidia_result = subprocess.run(nvidia_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if nvidia_result.returncode == 0 and b'h264_nvenc' in nvidia_result.stdout:
+                # Use higher performance settings for NVIDIA
+                encoders['nvidia'] = {
+                    'hwaccel': 'cuda',
+                    'encoder': 'h264_nvenc',
+                    'preset': 'p1',  # Fast preset for NVENC
+                    'priority': 0  # Highest priority (reduced from 1 to 0)
+                }
+                print("NVIDIA NVENC encoding available and prioritized")
     
-        # Check for AMD AMF
-        amf_cmd = 'ffmpeg -hide_banner -encoders | findstr amf'
-        if os.name != 'nt':
-            amf_cmd = 'ffmpeg -hide_banner -encoders | grep amf'
-        amf_result = subprocess.run(amf_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if amf_result.returncode == 0 and b'h264_amf' in amf_result.stdout:
-            encoders['amd'] = {
-                'hwaccel': 'amf',
-                'encoder': 'h264_amf',
-                'preset': 'faster',
-                'priority': 3
-            }
+        # Check for Intel Quick Sync Video (QSV) if QSV is supported
+        if 'qsv' in supported_hwaccels:
+            qsv_cmd = 'ffmpeg -hide_banner -encoders | findstr qsv'
+            if os.name != 'nt':
+                qsv_cmd = 'ffmpeg -hide_banner -encoders | grep qsv'
+            qsv_result = subprocess.run(qsv_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if qsv_result.returncode == 0 and b'h264_qsv' in qsv_result.stdout:
+                encoders['intel'] = {
+                    'hwaccel': 'qsv',
+                    'encoder': 'h264_qsv',
+                    'preset': 'faster',
+                    'priority': 2
+                }
+                print("Intel QuickSync encoding available")
+    
+        # Check for AMD AMF if D3D11VA or DXVA2 is supported (Windows-specific)
+        if 'd3d11va' in supported_hwaccels or 'dxva2' in supported_hwaccels:
+            amf_cmd = 'ffmpeg -hide_banner -encoders | findstr amf'
+            if os.name != 'nt':
+                amf_cmd = 'ffmpeg -hide_banner -encoders | grep amf'
+            amf_result = subprocess.run(amf_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if amf_result.returncode == 0 and b'h264_amf' in amf_result.stdout:
+                encoders['amd'] = {
+                    'hwaccel': 'd3d11va' if 'd3d11va' in supported_hwaccels else 'dxva2',
+                    'encoder': 'h264_amf',
+                    'preset': 'faster',
+                    'priority': 3
+                }
+                print("AMD AMF encoding available")
     except Exception as e:
         print(f"Error detecting GPU acceleration: {e}")
     
@@ -59,23 +84,32 @@ def detect_gpu_acceleration():
         'preset': 'medium',
         'priority': 4
     }
+    print("CPU encoding always available as fallback")
     
     # Sort by priority
     sorted_encoders = sorted(encoders.items(), key=lambda x: x[1]['priority'])
     return [v for k, v in sorted_encoders]
 
 def run_ffmpeg_with_gpu_fallback(command_template, input_args, output_file):
-    """Try to run ffmpeg command with GPU acceleration, falling back to CPU if needed."""
+    """Try to run ffmpeg command with GPU acceleration, prioritizing NVIDIA, then falling back to others."""
     encoders = detect_gpu_acceleration()
     
+    # Fast-path for NVIDIA - try this first if available
+    nvidia_encoder = next((encoder for encoder in encoders if encoder.get('encoder') == 'h264_nvenc'), None)
+    if nvidia_encoder:
+        # Move the NVIDIA encoder to the front of the list
+        encoders.remove(nvidia_encoder)
+        encoders.insert(0, nvidia_encoder)
+        
+    # Now try encoders in order
     for encoder in encoders:
-        hwaccel = f"-hwaccel {encoder['hwaccel']} " if encoder['hwaccel'] else ""
+        hwaccel_param = f"-hwaccel {encoder['hwaccel']} " if encoder['hwaccel'] else ""
         video_codec = f"-c:v {encoder['encoder']} "
         preset = f"-preset {encoder['preset']} " if encoder['preset'] else ""
         
         # Build the command with the current encoder - making sure ffmpeg comes first
         command = command_template.format(
-            hwaccel=hwaccel, 
+            hwaccel=hwaccel_param, 
             video_codec=video_codec,
             preset=preset,
             **input_args
@@ -84,12 +118,19 @@ def run_ffmpeg_with_gpu_fallback(command_template, input_args, output_file):
         print(f"Trying encoder: {encoder['encoder']}")
         print(f"Running command: {command}")
         
-        result = os.system(command)
-        
-        # Check if the command was successful and output file exists with content
-        if result == 0 and os.path.exists(output_file) and os.path.getsize(output_file) > 0:
-            print(f"Successfully processed with {encoder['encoder']}")
-            return True
+        # Use subprocess to capture detailed error output
+        try:
+            process = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            
+            if process.returncode == 0 and os.path.exists(output_file) and os.path.getsize(output_file) > 0:
+                print(f"Successfully processed with {encoder['encoder']}")
+                return True
+            else:
+                print(f"Command failed with return code {process.returncode}")
+                if process.stderr:
+                    print(f"Error details: {process.stderr[:500]}...")  # Print first 500 chars of error
+        except Exception as e:
+            print(f"Exception running command: {e}")
         
         print(f"Failed with {encoder['encoder']}, trying next option...")
     
@@ -107,7 +148,8 @@ def download_video(url, output_file):
 def extract_audio(video_file, output_audio, pitch=1.4, slow_down=False):
     if slow_down:
         pitch = 0.9
-    command = f'ffmpeg -i "{video_file}" -vn -af "asetrate=44100*{pitch},aresample=44100" -acodec libmp3lame "{output_audio}"'
+    # Improved quality settings with higher bitrate and better sampling
+    command = f'ffmpeg -i "{video_file}" -vn -af "asetrate=48000*{pitch},aresample=48000" -acodec libmp3lame -b:a 320k -ar 48000 "{output_audio}"'
     os.system(command)
 
 def get_audio_duration(audio_file):
@@ -231,6 +273,79 @@ def download_pexels_image(output_image, search_query):
     except Exception as e:
         print(f"Error fetching image from Pexels: {e}")
 
+def escape_text_for_ffmpeg(text):
+    """Properly escape text for ffmpeg's drawtext filter."""
+    # First, escape single quotes (most critical as they delimit the filter string)
+    text = text.replace("'", "'\\\\\\''")
+    # Escape other potentially problematic characters
+    text = text.replace(':', '\\:').replace(',', '\\,').replace('[', '\\[').replace(']', '\\]')
+    return text
+
+def download_audio(url, output_file):
+    """Download audio directly from YouTube without downloading video first, prioritizing high quality"""
+    ydl_opts = {
+        # Format selection prioritizes high quality audio
+        'format': 'bestaudio[acodec=opus]/bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '320',  # Increased from 192 to 320 kbps
+        }],
+        # Add audio quality settings
+        'postprocessor_args': [
+            '-ar', '48000',
+            '-ac', '2',
+        ],
+        'outtmpl': output_file.replace('.mp3', ''),  # yt-dlp will add extension
+    }
+    
+    try:
+        print("Downloading highest quality audio available...")
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            # Show info about selected format
+            if 'formats' in info:
+                selected_format = next((f for f in info['formats'] if f.get('format_id') == info.get('format_id')), None)
+                if selected_format:
+                    print(f"Selected audio format: {selected_format.get('format_note', 'Unknown')} "
+                          f"[{selected_format.get('ext', 'Unknown')}] - "
+                          f"{selected_format.get('abr', 'Unknown')}kbps")
+            
+            # Download the audio
+            ydl.download([url])
+        
+        # Ensure we have the correct filename (yt-dlp adds extension automatically)
+        actual_file = output_file.replace('.mp3', '') + '.mp3'
+        if os.path.exists(actual_file) and actual_file != output_file:
+            os.rename(actual_file, output_file)
+            
+        return True
+    except Exception as e:
+        print(f"Error downloading high quality audio: {e}")
+        
+        # Try a fallback with simpler options
+        try:
+            print("Trying fallback audio download method...")
+            simpler_opts = {
+                'format': 'bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                }],
+                'outtmpl': output_file.replace('.mp3', '')
+            }
+            with yt_dlp.YoutubeDL(simpler_opts) as ydl:
+                ydl.download([url])
+                
+            actual_file = output_file.replace('.mp3', '') + '.mp3'
+            if os.path.exists(actual_file) and actual_file != output_file:
+                os.rename(actual_file, output_file)
+                
+            return True
+        except Exception as e2:
+            print(f"Fallback download method also failed: {e2}")
+            return False
+
 def combine_video_audio_image(image_file, audio_file, output_video, video_title=None, api_choice=None):
     try:
         # Clean up any existing temporary files first
@@ -263,7 +378,7 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             
             # First approach: Use -stream_loop to properly loop the GIF for the full audio duration
             print("Converting GIF to looped video...")
-            # Fix command template to ensure ffmpeg comes first
+            # Add NVIDIA-specific settings if using NVIDIA
             command_template = 'ffmpeg {hwaccel}-y -stream_loop -1 -i "{input_file}" -t {duration} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p {video_codec}{preset}"{output_file}"'
             
             success = run_ffmpeg_with_gpu_fallback(command_template, {
@@ -343,30 +458,7 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
             except:
                 print("Could not verify video duration, continuing anyway.")
             
-            # Add text overlay if needed
-            if video_title:
-                text = re.sub(r'\(.*?\)', '', re.sub(r'[\\/:*?"<>|]', '', video_title.replace("_", " ").replace("nightcore", "").replace("(Official Audio)", "").replace("slowed down", "").replace("(Official Lyric Video)", "").replace("(Lyrics)", "").replace("(Official Video)", "").replace("(Official Music Video)", "").replace("(Official Visualizer)", "").strip()))
-                text_file = "temp_with_text.mp4"
-                
-                command_template = 'ffmpeg {hwaccel}-y -i "{input_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" {video_codec}{preset}-codec:a copy "{output_file}"'
-                
-                print(f"Adding text overlay: {text}")
-                success = run_ffmpeg_with_gpu_fallback(command_template, {
-                    'input_file': video_file,
-                    'text': text,
-                    'output_file': text_file
-                }, text_file)
-                
-                # Check if text overlay was successful
-                if success:
-                    # Delete the original file first, then rename
-                    if os.path.exists(video_file):
-                        os.remove(video_file)
-                    os.rename(text_file, video_file)
-                else:
-                    print("Failed to add text overlay. Using video without text.")
-
-            # Combine video with audio
+            # Combine video with audio (no text overlay)
             print("Combining video with audio...")
             command_template = 'ffmpeg {hwaccel}-y -i "{input_video}" -i "{input_audio}" -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
             
@@ -402,49 +494,14 @@ def combine_video_audio_image(image_file, audio_file, output_video, video_title=
                 print(f"Failed to resize image. Using original image.")
                 resized_image_file = image_file
             
-            if video_title:
-                text = re.sub(r'\(.*?\)', '', re.sub(r'[\\/:*?"<>|]', '', video_title.replace("_", " ").replace("nightcore", "").replace("(Official Audio)", "").replace("slowed down", "").replace("(Official Lyric Video)", "").replace("(Lyrics)", "").replace("(Official Video)", "").replace("(Official Music Video)", "").replace("(Official Visualizer)", "").strip()))
-                
-                # Create image with text directly
-                text_image_file = "text_overlay.jpg"
-                
-                command_template = 'ffmpeg {hwaccel}-y -i "{input_file}" -vf "drawtext=text=\'{text}\':x=w-tw-10:y=h-th-10:fontsize=40:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2" {video_codec}{preset}-frames:v 1 "{output_file}"'
-                
-                text_success = run_ffmpeg_with_gpu_fallback(command_template, {
-                    'input_file': resized_image_file,
-                    'text': text,
-                    'output_file': text_image_file
-                }, text_image_file)
-                
-                # Check if the text image was created successfully
-                if text_success:
-                    command_template = 'ffmpeg {hwaccel}-y -loop 1 -i "{input_image}" -i "{input_audio}" {video_codec}{preset}-c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
-                    
-                    success = run_ffmpeg_with_gpu_fallback(command_template, {
-                        'input_image': text_image_file,
-                        'input_audio': audio_file,
-                        'output_file': output_video
-                    }, output_video)
-                    
-                    os.remove(text_image_file)
-                else:
-                    # Fallback if text overlay fails
-                    print("Warning: Failed to create text overlay, using image without text.")
-                    command_template = 'ffmpeg {hwaccel}-y -loop 1 -i "{input_image}" -i "{input_audio}" {video_codec}{preset}-c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
-                    
-                    success = run_ffmpeg_with_gpu_fallback(command_template, {
-                        'input_image': resized_image_file,
-                        'input_audio': audio_file,
-                        'output_file': output_video
-                    }, output_video)
-            else:
-                command_template = 'ffmpeg {hwaccel}-y -loop 1 -i "{input_image}" -i "{input_audio}" {video_codec}{preset}-c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
-                
-                success = run_ffmpeg_with_gpu_fallback(command_template, {
-                    'input_image': resized_image_file,
-                    'input_audio': audio_file,
-                    'output_file': output_video
-                }, output_video)
+            # Create video directly from static image and audio (no text overlay)
+            command_template = 'ffmpeg {hwaccel}-y -loop 1 -i "{input_image}" -i "{input_audio}" {video_codec}{preset}-c:a aac -strict experimental -b:a 192k -shortest "{output_file}"'
+            
+            success = run_ffmpeg_with_gpu_fallback(command_template, {
+                'input_image': resized_image_file,
+                'input_audio': audio_file,
+                'output_file': output_video
+            }, output_video)
             
             if resized_image_file != image_file and os.path.exists(resized_image_file):
                 os.remove(resized_image_file)
@@ -551,7 +608,6 @@ def process_single_video(video_url, api_choice, speed_up, search_query):
     else:
         video_title = "slowed_down_" + re.sub(r'[\\/:*?"<>|]', '', video_info['title'].replace(" ", "_"))
     
-    video_filename = "video.mp4"
     audio_filename = "audio.mp3"
     
     # Set appropriate file extension based on background type
@@ -559,11 +615,29 @@ def process_single_video(video_url, api_choice, speed_up, search_query):
     output_video = f"{video_title}.mp4"
 
     print(f"\nProcessing: {video_info['title']}")
-    print(f"Downloading video...")
-    download_video(video_url, video_filename)
     
-    print(f"Extracting and modifying audio...")
-    extract_audio(video_filename, audio_filename, slow_down=not speed_up)
+    # Download audio directly instead of downloading video first
+    print(f"Downloading audio...")
+    if download_audio(video_url, audio_filename):
+        print(f"Audio downloaded successfully")
+    else:
+        print(f"Failed to download audio directly, falling back to video download method")
+        video_filename = "video.mp4"
+        download_video(video_url, video_filename)
+        print(f"Extracting and modifying audio...")
+        extract_audio(video_filename, audio_filename, slow_down=not speed_up)
+        # Clean up video file
+        if os.path.exists(video_filename):
+            os.remove(video_filename)
+    
+    # Apply audio speed modification
+    print(f"Modifying audio speed...")
+    temp_audio = "temp_audio.mp3"
+    if os.path.exists(temp_audio):
+        os.remove(temp_audio)
+    extract_audio(audio_filename, temp_audio, slow_down=not speed_up)
+    os.remove(audio_filename)
+    os.rename(temp_audio, audio_filename)
     
     print(f"Downloading {'GIF' if api_choice == '4' else 'image'} background...")
     download_cat_image(image_filename, api_choice, search_query)
@@ -571,11 +645,11 @@ def process_single_video(video_url, api_choice, speed_up, search_query):
     print(f"Creating final video...")
     success = combine_video_audio_image(image_filename, audio_filename, output_video, video_title, api_choice)
     
-    # Clean up temporary files
-    for file in [video_filename, audio_filename]:
-        if os.path.exists(file):
-            os.remove(file)
+    # Clean up audio file
+    if os.path.exists(audio_filename):
+        os.remove(audio_filename)
     
+    # Clean up image file
     if os.path.exists(image_filename):
         os.remove(image_filename)
     
