@@ -71,7 +71,7 @@ def download_cat_image(output_image, api_choice, search_query=None):
         print(f"Error fetching image: {e}")
 
 def download_random_gif(search_query, output_gif):
-    TENOR_API_KEY = 'AIzaSyCNzhdss1TbQ64_IQ-6JPQJm-Bq445YfUM'
+    TENOR_API_KEY = ''
     try:
         params = {
             'q': search_query,
