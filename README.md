@@ -10,7 +10,7 @@
 ```
 ### A Python script that automates the creation of nightcore-style/sped-up videos or slowed-down videos by combining a wallpaper with audio extracted from URLs from supported websites like **YouTube**, **YouTube music**, and **Soundcloud**. 
 ### This script will work with other sites, full list can be found [here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
-#### Use GUI  
+#### Use GUI  no requirements/installation of ffmpeg .exe is found in releases
 - Requires Tenor API, can be obtained at https://developers.google.com/tenor/guides/quickstart
 ![image](https://github.com/user-attachments/assets/729518d6-dac6-4b52-b72b-d99f53c2c9e5)
 ![gif](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/52e46e16-7421-42f0-bd5e-ac603290e9af)
