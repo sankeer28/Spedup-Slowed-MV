@@ -12,7 +12,7 @@
 ### This script will work with other sites, full list can be found [here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
 #### Use GUI  
 - Requires Tenor API, can be obtained at https://developers.google.com/tenor/guides/quickstart
-![image](https://github.com/user-attachments/assets/637386ee-9cb2-40a7-bf00-03197efe92ca)
+![image](https://github.com/user-attachments/assets/729518d6-dac6-4b52-b72b-d99f53c2c9e5)
 ![gif](https://github.com/sankeer28/Spedup-Slowed-MV/assets/112449287/52e46e16-7421-42f0-bd5e-ac603290e9af)
 <details>
 <summary>
