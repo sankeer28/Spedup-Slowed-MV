@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spedup-Slowed-MV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .radio-option:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .radio-option input[type="radio"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .radio-option.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-right: 10px;
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .media-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            min-height: 120px;
+        }
+
+        .media-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .media-item.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+
+        .media-item img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .progress-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .progress-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 400px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e1e5e9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-message {
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .progress-card {
+                margin: 20px;
+                min-width: auto;
+            }
+        }
+
+
+        .loading {
+            display: none;
+        }
+
+        .status-loading {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .status-loading.active {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .load-more-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 20px;
+        }
+
+        /* Custom slider styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: #e1e5e9;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Spedup-Slowed-MV</h1>
+            <p>Create nightcore and slowed versions of YouTube videos with custom backgrounds</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel: Settings -->
+            <div class="card">
+                <h2>⚙️ Video Settings</h2>
+                
+                <div class="form-group">
+                    <label for="youtube-url">YouTube URL</label>
+                    <input type="url" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." required>
+                </div>
+
+                <div class="form-group">
+                    <label>Speed Effect</label>
+                    <div class="radio-group">
+                        <div class="radio-option selected" data-value="fast">
+                            <input type="radio" name="speed" value="fast" checked>
+                            <span>🚀 Nightcore (Fast)</span>
+                        </div>
+                        <div class="radio-option" data-value="slow">
+                            <input type="radio" name="speed" value="slow">
+                            <span>🐌 Slowed Down</span>
+                        </div>
+                        <div class="radio-option" data-value="custom">
+                            <input type="radio" name="speed" value="custom">
+                            <span>⚙️ Custom Speed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" id="custom-speed-section" style="display: none;">
+                    <label for="speed-slider">Custom Speed: <span id="speed-value">1.4</span>x</label>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                        <span style="font-size: 12px; color: #666;">0.5x</span>
+                        <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.4" style="flex: 1;">
+                        <span style="font-size: 12px; color: #666;">2.0x</span>
+                    </div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Tip: Values below 1.0 slow down, above 1.0 speed up
+                    </div>
+                </div>
+
+
+                <div class="form-group">
+                    <label>Background Type</label>
+                    <div class="radio-group">
+                        <div class="radio-option selected" data-value="gif">
+                            <input type="radio" name="media-type" value="gif" checked>
+                            <span>🎬 Animated GIF</span>
+                        </div>
+                        <div class="radio-option" data-value="image">
+                            <input type="radio" name="media-type" value="image">
+                            <span>🖼️ Static Image</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button class="btn" id="create-video" onclick="createVideo()">
+                        ✨ Create Video
+                    </button>
+                </div>
+
+                <div class="success-message" id="success-message"></div>
+                <div class="error-message" id="error-message"></div>
+                
+                <!-- Video Player Section -->
+                <div id="video-player-section" style="display: none; margin-top: 20px;">
+                    <h3 style="color: #333; margin-bottom: 15px;">🎬 Your Created Video</h3>
+                    <video id="created-video" controls preload="metadata" style="width: 100%; max-width: 500px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                        <source id="video-source" src="" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn-secondary btn" onclick="downloadVideo()" id="download-btn" style="font-size: 14px;">
+                            📥 Download
+                        </button>
+                        <button class="btn-secondary btn" onclick="hideVideoPlayer()" style="font-size: 14px;">
+                            ❌ Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Media Selection -->
+            <div class="card">
+                <h2 id="media-title">🎬 Select GIF</h2>
+                
+                <div class="tabs">
+                    <div class="tab active" data-tab="gif">GIF Search</div>
+                    <div class="tab" data-tab="images">Image Gallery</div>
+                </div>
+
+                <!-- GIF Search Tab -->
+                <div class="tab-content active" id="gif-tab">
+                    <div class="form-group">
+                        <label for="tenor-api-key">Tenor API Key (optional)</label>
+                        <input type="text" id="tenor-api-key" placeholder="Enter your Tenor API key" onchange="saveApiKey()" oninput="saveApiKey()">
+                        <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">API key will be saved automatically for future use</small>
+                    </div>
+                    
+                    <div class="search-bar">
+                        <input type="text" id="gif-search" placeholder="Search for GIFs...">
+                        <button class="btn-secondary btn" onclick="searchGifs()">Search</button>
+                    </div>
+                    
+                    <div class="media-grid" id="gif-grid">
+                        <div style="grid-column: span 3; text-align: center; padding: 40px; color: #666;">
+                            Enter a search term and click "Search" to find GIFs
+                        </div>
+                    </div>
+                    
+                </div>
+
+                <!-- Image Gallery Tab -->
+                <div class="tab-content" id="images-tab">
+                    <div class="form-group">
+                        <label for="image-source">Image Source</label>
+                        <select id="image-source" onchange="handleImageSourceChange()">
+                            <option value="anime">Anime Wallpapers</option>
+                            <option value="cat">Cat Pictures</option>
+                            <option value="random">Random Images</option>
+                            <option value="custom">Custom URL</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="custom-url-section" style="display: none;">
+                        <label for="custom-url">Image/GIF URL</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="url" id="custom-url" placeholder="https://example.com/image.jpg or .gif" style="flex: 1;">
+                            <button class="btn-secondary btn" onclick="loadCustomUrl()" style="font-size: 14px;">
+                                Load
+                            </button>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Enter a direct URL to an image or GIF file
+                        </div>
+                    </div>
+                    
+                    <div class="media-grid" id="image-grid">
+                        <div style="grid-column: span 3; text-align: center; padding: 40px; color: #666;">
+                            Loading images...
+                        </div>
+                    </div>
+                    
+                    <div class="load-more-container">
+                        <button class="btn-secondary btn" id="load-more-btn" onclick="loadMoreImages()" style="display: none;">
+                            📸 Load More Images
+                        </button>
+                        <div class="status-loading" id="loading-status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Overlay -->
+    <div class="progress-overlay" id="progress-overlay">
+        <div class="progress-card">
+            <h3>🎬 Creating Your Video</h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div id="progress-percentage">0%</div>
+            <div class="status-message" id="status-message">Starting...</div>
+        </div>
+    </div>
+
+    <script>
+        let selectedMediaUrl = null;
+        let selectedMediaType = 'gif';
+        let processingInterval = null;
+        let imageState = {
+            currentPage: 1,
+            loading: false,
+            hasMore: true,
+            currentSource: 'anime'
+        };
+
+        let gifState = {
+            currentOffset: 0,
+            loading: false,
+            hasMore: true,
+            currentQuery: '',
+            currentApiKey: ''
+        };
+
+        let scrollState = {
+            lastScrollTop: 0,
+            lastScrollTime: 0,
+            velocity: 0,
+            scrollHistory: []
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadImages(); // Load default images
+            loadSavedApiKey(); // Load saved API key
+            console.log('App initialized with infinite scroll');
+        });
+
+        function setupEventListeners() {
+            // Radio button handling
+            document.querySelectorAll('.radio-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const group = this.parentElement;
+                    group.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    this.querySelector('input[type="radio"]').checked = true;
+                    
+                    // Handle speed selection
+                    if (this.querySelector('input[name="speed"]')) {
+                        handleSpeedSelection(this.dataset.value);
+                    }
+                    
+                    // Update media type
+                    if (this.dataset.value === 'gif' || this.dataset.value === 'image') {
+                        selectedMediaType = this.dataset.value;
+                        updateMediaTitle();
+                        switchToTab(this.dataset.value === 'gif' ? 'gif' : 'images');
+                    }
+                });
+            });
+
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    switchToTab(this.dataset.tab);
+                });
+            });
+
+            // Enter key for search
+            document.getElementById('gif-search').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchGifs();
+                }
+            });
+
+            // Enter key for custom URL
+            document.getElementById('custom-url').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    loadCustomUrl();
+                }
+            });
+
+            // Speed slider handling
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+            
+            speedSlider.addEventListener('input', function() {
+                speedValue.textContent = this.value;
+            });
+        }
+
+        function switchToTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName === 'gif' ? 'gif' : 'images'}-tab`).classList.add('active');
+            
+            selectedMediaType = tabName === 'gif' ? 'gif' : 'image';
+            updateMediaTitle();
+            
+            // Update radio button
+            document.querySelector(`input[name="media-type"][value="${selectedMediaType}"]`).checked = true;
+            document.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelector(`[data-value="${selectedMediaType}"]`).classList.add('selected');
+        }
+
+        function updateMediaTitle() {
+            const title = selectedMediaType === 'gif' ? '🎬 Select GIF' : '🖼️ Select Image';
+            document.getElementById('media-title').textContent = title;
+        }
+
+        function handleSpeedSelection(speedType) {
+            const customSection = document.getElementById('custom-speed-section');
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+            
+            if (speedType === 'custom') {
+                customSection.style.display = 'block';
+            } else {
+                customSection.style.display = 'none';
+                
+                // Set default values for presets
+                if (speedType === 'fast') {
+                    speedSlider.value = '1.4';
+                    speedValue.textContent = '1.4';
+                } else if (speedType === 'slow') {
+                    speedSlider.value = '0.9';
+                    speedValue.textContent = '0.9';
+                }
+            }
+        }
+
+        function getCurrentSpeed() {
+            const speedChoice = document.querySelector('input[name="speed"]:checked').value;
+            
+            if (speedChoice === 'custom') {
+                return parseFloat(document.getElementById('speed-slider').value);
+            } else if (speedChoice === 'fast') {
+                return 1.4;
+            } else { // slow
+                return 0.9;
+            }
+        }
+
+        async function searchGifs() {
+            const query = document.getElementById('gif-search').value.trim();
+            const apiKey = document.getElementById('tenor-api-key').value.trim() || 'AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ'; // Default demo key
+            
+            if (!query) {
+                showError('Please enter a search term');
+                return;
+            }
+
+            const grid = document.getElementById('gif-grid');
+            grid.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px;">Searching for GIFs...</div>';
+
+            try {
+                const response = await fetch(`/api/gif-search?query=${encodeURIComponent(query)}&api_key=${encodeURIComponent(apiKey)}&offset=0`);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                displayMedia(data.gifs, 'gif-grid', 'gif', true);
+
+            } catch (error) {
+                grid.innerHTML = `<div style="grid-column: span 3; text-align: center; padding: 40px; color: #dc3545;">Error: ${error.message}</div>`;
+            }
+        }
+
+        function handleImageSourceChange() {
+            const source = document.getElementById('image-source').value;
+            const customSection = document.getElementById('custom-url-section');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            
+            if (source === 'custom') {
+                customSection.style.display = 'block';
+                loadMoreBtn.style.display = 'none';
+                // Clear the grid and show instruction
+                const grid = document.getElementById('image-grid');
+                grid.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: #666;">Enter an image or GIF URL above and click Load</div>';
+            } else {
+                customSection.style.display = 'none';
+                loadImages(true);
+            }
+        }
+
+        async function loadCustomUrl() {
+            const url = document.getElementById('custom-url').value.trim();
+            const grid = document.getElementById('image-grid');
+            
+            if (!url) {
+                showError('Please enter a URL');
+                return;
+            }
+            
+            // Validate URL format
+            try {
+                new URL(url);
+            } catch {
+                showError('Please enter a valid URL');
+                return;
+            }
+            
+            // Detect if URL is a GIF
+            const isGif = url.toLowerCase().includes('.gif');
+            
+            grid.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px;">Loading custom image...</div>';
+            
+            // Test if the URL is a valid image/gif by trying to load it
+            const img = new Image();
+            img.onload = function() {
+                // Successfully loaded, display it
+                const mediaType = isGif ? 'gif' : 'image';
+                displayMedia([{url: url, preview: url}], 'image-grid', mediaType, true);
+                
+                // Auto-select the appropriate background type (but stay on current tab)
+                if (isGif) {
+                    // Select GIF background type
+                    document.querySelector('input[name="media-type"][value="gif"]').checked = true;
+                    selectedMediaType = 'gif';
+                    // Update the radio button UI only
+                    document.querySelectorAll('[name="media-type"]').forEach(radio => {
+                        const option = radio.closest('.radio-option');
+                        option.classList.remove('selected');
+                    });
+                    document.querySelector('[data-value="gif"]').classList.add('selected');
+                } else {
+                    // Select image background type
+                    document.querySelector('input[name="media-type"][value="image"]').checked = true;
+                    selectedMediaType = 'image';
+                    // Update the radio button UI only
+                    document.querySelectorAll('[name="media-type"]').forEach(radio => {
+                        const option = radio.closest('.radio-option');
+                        option.classList.remove('selected');
+                    });
+                    document.querySelector('[data-value="image"]').classList.add('selected');
+                }
+                
+                updateMediaTitle();
+                
+                // Hide load more button for custom images
+                document.getElementById('load-more-btn').style.display = 'none';
+                showSuccess(`Custom ${isGif ? 'GIF' : 'image'} loaded and background type updated!`);
+            };
+            img.onerror = function() {
+                grid.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: #dc3545;">Failed to load image from URL. Please check the URL and try again.</div>';
+                showError('Failed to load image from the provided URL');
+            };
+            img.src = url;
+        }
+
+        async function loadImages(reset = true) {
+            const source = document.getElementById('image-source').value;
+            const grid = document.getElementById('image-grid');
+            
+            // Don't load if custom is selected
+            if (source === 'custom') {
+                return;
+            }
+            
+            if (reset) {
+                // Reset state when changing source or initial load
+                imageState.currentPage = 1;
+                imageState.hasMore = true;
+                imageState.currentSource = source;
+                grid.innerHTML = '<div class="loading"></div>';
+            } else if (imageState.loading || !imageState.hasMore) {
+                return; // Don't load if already loading or no more images
+            }
+
+            imageState.loading = true;
+            
+            // Show loading status
+            if (!reset) {
+                document.getElementById('loading-status').classList.add('active');
+            }
+
+            try {
+                const response = await fetch(`/api/images?source=${source}&count=12&page=${imageState.currentPage}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (reset) {
+                    // First load - replace all content
+                    displayMedia(data.images.map(url => ({url, preview: url})), 'image-grid', 'image', false);
+                } else {
+                    // Append new images to existing grid
+                    appendMedia(data.images.map(url => ({url, preview: url})), 'image-grid', 'image');
+                }
+
+                imageState.currentPage++;
+                imageState.hasMore = data.hasMore;
+                
+                if (!imageState.hasMore) {
+                    addEndMessage();
+                    document.getElementById('load-more-btn').style.display = 'none';
+                } else {
+                    document.getElementById('load-more-btn').style.display = 'block';
+                }
+                
+            } catch (error) {
+                if (reset) {
+                    grid.innerHTML = `<div style="grid-column: span 3; text-align: center; padding: 40px; color: #dc3545;">Error: ${error.message}</div>`;
+                }
+            } finally {
+                imageState.loading = false;
+                
+                // Hide loading status
+                document.getElementById('loading-status').classList.remove('active');
+            }
+        }
+
+        function displayMedia(items, gridId, type, clearFirst = true) {
+            const grid = document.getElementById(gridId);
+            
+            if (clearFirst) {
+                if (items.length === 0) {
+                    grid.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: #666;">No results found</div>';
+                    return;
+                }
+                grid.innerHTML = '';
+            }
+            
+            items.forEach((item, index) => {
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item';
+                mediaItem.onclick = () => selectMedia(item.url, mediaItem, type);
+                
+                const img = document.createElement('img');
+                img.src = item.preview || item.url;
+                img.alt = `${type} ${index + 1}`;
+                img.loading = 'lazy';
+                
+                mediaItem.appendChild(img);
+                grid.appendChild(mediaItem);
+            });
+            
+            // Add scroll listener for infinite scroll (only for images)
+            if (gridId === 'image-grid' && clearFirst) {
+                setupInfiniteScroll();
+            }
+        }
+
+        function appendMedia(items, gridId, type) {
+            const grid = document.getElementById(gridId);
+            
+            items.forEach((item, index) => {
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item';
+                mediaItem.onclick = () => selectMedia(item.url, mediaItem, type);
+                
+                const img = document.createElement('img');
+                img.src = item.preview || item.url;
+                img.alt = `${type} ${index + 1}`;
+                img.loading = 'lazy';
+                
+                mediaItem.appendChild(img);
+                grid.appendChild(mediaItem);
+            });
+            
+            // Re-setup scroll listener after adding new content
+            if (gridId === 'image-grid') {
+                setTimeout(() => setupInfiniteScroll(), 100);
+            }
+        }
+
+        function setupInfiniteScroll() {
+            const grid = document.getElementById('image-grid');
+            
+            // Remove existing scroll listener
+            grid.removeEventListener('scroll', handleImageScroll);
+            
+            // Add new scroll listener with passive for better performance
+            grid.addEventListener('scroll', handleImageScroll, { passive: true });
+            
+            console.log('Infinite scroll setup complete for grid:', {
+                scrollHeight: grid.scrollHeight,
+                clientHeight: grid.clientHeight,
+                canScroll: grid.scrollHeight > grid.clientHeight
+            });
+        }
+
+        function handleImageScroll(event) {
+            const grid = event.target;
+            const scrollTop = grid.scrollTop;
+            const scrollHeight = grid.scrollHeight;
+            const clientHeight = grid.clientHeight;
+            const currentTime = Date.now();
+            
+            // Calculate scroll velocity
+            const timeDelta = currentTime - scrollState.lastScrollTime;
+            const scrollDelta = scrollTop - scrollState.lastScrollTop;
+            
+            if (timeDelta > 0) {
+                scrollState.velocity = scrollDelta / timeDelta; // pixels per millisecond
+            }
+            
+            // Keep scroll history for better velocity calculation
+            scrollState.scrollHistory.push({
+                time: currentTime,
+                position: scrollTop,
+                velocity: scrollState.velocity
+            });
+            
+            // Keep only last 5 scroll events
+            if (scrollState.scrollHistory.length > 5) {
+                scrollState.scrollHistory.shift();
+            }
+            
+            // Calculate average velocity from recent history
+            let avgVelocity = 0;
+            if (scrollState.scrollHistory.length > 1) {
+                const recent = scrollState.scrollHistory.slice(-3);
+                avgVelocity = recent.reduce((sum, item) => sum + Math.abs(item.velocity), 0) / recent.length;
+            }
+            
+            scrollState.lastScrollTop = scrollTop;
+            scrollState.lastScrollTime = currentTime;
+            
+            // Check if we can actually scroll
+            const canScroll = scrollHeight > clientHeight;
+            const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+            
+            // Dynamic threshold based on scroll velocity
+            let threshold = 300; // Default threshold
+            
+            if (avgVelocity > 0.5) { // Fast scrolling
+                threshold = 800; // Load much earlier
+            } else if (avgVelocity > 0.2) { // Medium scrolling
+                threshold = 500; // Load earlier
+            }
+            
+            console.log('Smart scroll:', {
+                scrollTop,
+                distanceFromBottom,
+                velocity: scrollState.velocity.toFixed(3),
+                avgVelocity: avgVelocity.toFixed(3),
+                threshold,
+                loading: imageState.loading,
+                hasMore: imageState.hasMore
+            });
+            
+            // Predictive loading based on scroll speed
+            if (canScroll && distanceFromBottom <= threshold) {
+                if (!imageState.loading && imageState.hasMore) {
+                    console.log(`🚀 Smart loading triggered! Distance: ${distanceFromBottom}px, Threshold: ${threshold}px, Velocity: ${avgVelocity.toFixed(3)}`);
+                    loadImages(false); // false = don't reset, append to existing
+                }
+            }
+        }
+
+
+        function addEndMessage() {
+            const grid = document.getElementById('image-grid');
+            const existing = grid.querySelector('.end-message');
+            if (!existing) {
+                const endDiv = document.createElement('div');
+                endDiv.className = 'end-message';
+                endDiv.style.gridColumn = 'span 3';
+                endDiv.style.textAlign = 'center';
+                endDiv.style.padding = '20px';
+                endDiv.style.color = '#666';
+                endDiv.innerHTML = '🎉 All images loaded!';
+                grid.appendChild(endDiv);
+            }
+        }
+
+        function selectMedia(url, element, type) {
+            // Remove selection from all items in the grid
+            element.parentElement.querySelectorAll('.media-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Select this item
+            element.classList.add('selected');
+            selectedMediaUrl = url;
+            
+            showSuccess(`${type === 'gif' ? 'GIF' : 'Image'} selected successfully!`);
+        }
+
+        async function createVideo() {
+            const youtubeUrl = document.getElementById('youtube-url').value.trim();
+            const speedChoice = document.querySelector('input[name="speed"]:checked').value;
+            const customSpeed = getCurrentSpeed();
+            
+            if (!youtubeUrl) {
+                showError('Please enter a YouTube URL');
+                return;
+            }
+            
+            if (!selectedMediaUrl) {
+                showError(`Please select a ${selectedMediaType === 'gif' ? 'GIF' : 'image'} first`);
+                return;
+            }
+
+            // Show progress overlay
+            document.getElementById('progress-overlay').style.display = 'flex';
+            document.getElementById('create-video').disabled = true;
+
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        youtube_url: youtubeUrl,
+                        media_type: selectedMediaType,
+                        bg_url: selectedMediaUrl,
+                        speed_choice: speedChoice,
+                        custom_speed: customSpeed,
+                        save_credits: false
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Start polling for progress
+                startProgressPolling();
+                
+            } catch (error) {
+                hideProgress();
+                showError(`Error starting video creation: ${error.message}`);
+            }
+        }
+
+        function startProgressPolling() {
+            processingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/status');
+                    const status = await response.json();
+                    
+                    updateProgress(status.progress, status.message);
+                    
+                    if (status.status === 'complete') {
+                        clearInterval(processingInterval);
+                        hideProgress();
+                        showVideoPlayer(status.output_file);
+                        showSuccess('Video created successfully!');
+                    } else if (status.status === 'error') {
+                        clearInterval(processingInterval);
+                        hideProgress();
+                        showError(status.message);
+                    }
+                } catch (error) {
+                    clearInterval(processingInterval);
+                    hideProgress();
+                    showError('Error checking progress');
+                }
+            }, 1000);
+        }
+
+        function updateProgress(percentage, message) {
+            document.getElementById('progress-bar').style.width = percentage + '%';
+            document.getElementById('progress-percentage').textContent = Math.round(percentage) + '%';
+            document.getElementById('status-message').textContent = message;
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-overlay').style.display = 'none';
+            document.getElementById('create-video').disabled = false;
+            if (processingInterval) {
+                clearInterval(processingInterval);
+            }
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            const errorDiv = document.getElementById('error-message');
+            
+            errorDiv.style.display = 'none';
+            successDiv.innerHTML = message;
+            successDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showError(message) {
+            const successDiv = document.getElementById('success-message');
+            const errorDiv = document.getElementById('error-message');
+            
+            successDiv.style.display = 'none';
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function loadMoreImages() {
+            console.log('Load More button clicked');
+            loadImages(false);
+        }
+
+
+        function loadSavedApiKey() {
+            const savedApiKey = localStorage.getItem('tenor_api_key');
+            if (savedApiKey) {
+                document.getElementById('tenor-api-key').value = savedApiKey;
+                console.log('Loaded saved API key');
+            }
+        }
+
+        function saveApiKey() {
+            const apiKey = document.getElementById('tenor-api-key').value.trim();
+            if (apiKey) {
+                localStorage.setItem('tenor_api_key', apiKey);
+                console.log('API key saved to cache');
+                showSuccess('API key saved for future use!');
+            } else {
+                localStorage.removeItem('tenor_api_key');
+                console.log('API key removed from cache');
+            }
+        }
+
+        function showVideoPlayer(outputFile) {
+            const videoSection = document.getElementById('video-player-section');
+            const videoSource = document.getElementById('video-source');
+            const video = document.getElementById('created-video');
+            const downloadBtn = document.getElementById('download-btn');
+            
+            // Extract filename from path
+            const filename = outputFile.split('/').pop() || outputFile.split('\\').pop();
+            const videoUrl = `/video/${encodeURIComponent(filename)}`;
+            const downloadUrl = `/download/${encodeURIComponent(filename)}`;
+            
+            // Set video source
+            videoSource.src = videoUrl;
+            
+            // Force reload the video
+            video.load();
+            
+            // Update download button
+            downloadBtn.onclick = () => downloadVideo(downloadUrl);
+            
+            // Show the video player
+            videoSection.style.display = 'block';
+            
+            // Scroll to video player
+            videoSection.scrollIntoView({ behavior: 'smooth' });
+            
+            console.log('Video player shown for:', filename);
+        }
+
+        function hideVideoPlayer() {
+            const videoSection = document.getElementById('video-player-section');
+            const video = document.getElementById('created-video');
+            
+            // Pause video if playing
+            video.pause();
+            
+            // Hide the video player
+            videoSection.style.display = 'none';
+            
+            console.log('Video player hidden');
+        }
+
+        function downloadVideo(videoUrl) {
+            if (!videoUrl) {
+                const videoSource = document.getElementById('video-source');
+                videoUrl = videoSource.src;
+            }
+            
+            // Create temporary link and click it to trigger download
+            const link = document.createElement('a');
+            link.href = videoUrl;
+            link.download = '';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('Download triggered for:', videoUrl);
+        }
+    </script>
+</body>
+</html>
