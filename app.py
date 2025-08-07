@@ -448,30 +448,78 @@ def get_images():
     source = request.args.get('source', 'anime')  # anime, cat, random
     count = int(request.args.get('count', 12))
     page = int(request.args.get('page', 1))
+    categories = request.args.get('categories', '')  # comma-separated list of waifu.pics categories
+    picre_enabled = request.args.get('picre', 'true').lower() == 'true'  # whether to include pic.re
+    
+    print(f"=== API CALL ===")
+    print(f"Source: {source}, Count: {count}, Page: {page}")
+    print(f"Categories: '{categories}', Pic.re: {picre_enabled}")
     
     try:
         images = []
         
         if source == 'anime':
-            # For anime, we'll use different endpoints to get variety
-            endpoints = [
-                "https://api.waifu.pics/sfw/waifu",
-                "https://api.waifu.pics/sfw/neko", 
-                "https://api.waifu.pics/sfw/shinobu",
-                "https://api.waifu.pics/sfw/megumin"
+            # All available waifu.pics SFW categories
+            all_waifu_categories = [
+                'waifu', 'neko', 'shinobu', 'megumin', 'bully', 'cuddle', 'cry', 'hug', 'awoo', 'kiss',
+                'lick', 'pat', 'smug', 'bonk', 'yeet', 'blush', 'smile', 'wave', 'highfive', 'handhold',
+                'nom', 'bite', 'glomp', 'slap', 'kill', 'kick', 'happy', 'wink', 'poke', 'dance', 'cringe'
             ]
             
+            # Parse selected categories from request, default to basic ones if none specified
+            if categories:
+                selected_categories = [cat.strip() for cat in categories.split(',') if cat.strip() in all_waifu_categories]
+                if not selected_categories:  # If no valid categories after filtering
+                    selected_categories = ['waifu', 'neko', 'shinobu', 'megumin']
+            else:
+                selected_categories = ['waifu', 'neko', 'shinobu', 'megumin']  # default categories
+            
+            print(f"Selected categories: {selected_categories}")
+            print(f"Pic.re enabled: {picre_enabled}")
+            
+            # Build endpoints list from selected categories
+            endpoints = [f"https://api.waifu.pics/sfw/{cat}" for cat in selected_categories]
+            
+            # Add pic.re if enabled
+            if picre_enabled:
+                endpoints.append("https://pic.re/image")
+            
+            print(f"Endpoints: {endpoints}")
+            
+            # Simple approach: just get images from each endpoint
             for _ in range(count):
-                # Rotate through different endpoints for variety
                 endpoint = endpoints[len(images) % len(endpoints)]
+                
                 try:
-                    response = requests.get(endpoint, timeout=5)
-                    if response.status_code == 200:
-                        data = response.json()
-                        if 'url' in data:
-                            images.append(data['url'])
-                except:
+                    if endpoint == "https://pic.re/image":
+                        # pic.re needs fresh request each time, add timestamp to force new image
+                        import time
+                        fresh_url = f"{endpoint}?t={int(time.time() * 1000000)}"
+                        response = requests.get(fresh_url, timeout=10)
+                        if response.status_code == 200:
+                            images.append(response.url)
+                            print(f"Added pic.re image: {response.url}")
+                    else:
+                        # waifu.pics APIs return JSON with url field
+                        response = requests.get(endpoint, timeout=10)
+                        if response.status_code == 200:
+                            data = response.json()
+                            if 'url' in data:
+                                url = data['url']
+                                # Include all images (both static and GIFs)
+                                images.append(url)
+                                print(f"Added waifu.pics image from {endpoint}: {url}")
+                        else:
+                            print(f"Bad response from {endpoint}: {response.status_code}")
+                except Exception as e:
+                    print(f"Error fetching from {endpoint}: {e}")
                     continue
+                
+                # Stop if we're getting too many failures
+                if len(images) == 0 and len([img for img in images if img]) < count // 2:
+                    break
+            
+            print(f"Anime source: Got {len(images)} images out of {count} requested")
                         
         elif source == 'cat':
             # Cat API supports pagination
@@ -497,7 +545,9 @@ def get_images():
                 except:
                     continue
         
-        return jsonify({'images': images, 'page': page, 'hasMore': len(images) == count})
+        # Always return a response, even if we have fewer images than requested
+        has_more = len(images) == count and (source != 'anime' or len(images) > 0)
+        return jsonify({'images': images, 'page': page, 'hasMore': has_more})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

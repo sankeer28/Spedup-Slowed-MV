@@ -157,6 +157,7 @@
         .media-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-auto-rows: 10px;
             gap: 15px;
             max-height: 400px;
             overflow-y: auto;
@@ -173,7 +174,6 @@
             cursor: pointer;
             transition: all 0.3s ease;
             border: 2px solid transparent;
-            min-height: 120px;
         }
 
         .media-item:hover {
@@ -191,6 +191,7 @@
             height: auto;
             object-fit: cover;
             border-radius: 6px;
+            display: block;
         }
 
         .progress-overlay {
@@ -374,6 +375,35 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
+        /* Category checkbox styling */
+        .category-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .category-option:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        .category-option input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .category-option label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 13px;
+            color: #555;
+        }
+
     </style>
 </head>
 <body>
@@ -507,6 +537,35 @@
                         </select>
                     </div>
 
+                    <!-- Anime Categories Selection -->
+                    <div class="form-group" id="anime-categories-section" style="display: block;">
+                        <label>Image Sources</label>
+                        
+                        <!-- pic.re Toggle -->
+                        <div style="margin-bottom: 15px; padding: 12px; border: 2px solid #e1e5e9; border-radius: 8px; background: #f8f9fa;">
+                            <div class="category-option">
+                                <input type="checkbox" id="enable-picre" onchange="onCategoryChange()" checked>
+                                <label for="enable-picre" style="font-weight: 600; color: #333;">pic.re - Random Images</label>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px; margin-left: 22px;">
+                                Include random images from pic.re API (refreshes each load)
+                            </div>
+                        </div>
+
+                        <!-- Waifu.pics Categories -->
+                        <label style="margin-bottom: 8px; display: block;">Waifu.pics Categories</label>
+                        <div style="max-height: 200px; overflow-y: auto; border: 2px solid #e1e5e9; border-radius: 8px; padding: 10px; background: #f8f9fa;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; font-size: 14px;">
+                                <!-- Categories will be populated by JavaScript -->
+                            </div>
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e1e5e9; display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" class="btn" onclick="selectAllCategories()" style="font-size: 12px; padding: 6px 12px;">Select All</button>
+                                <button type="button" class="btn" onclick="deselectAllCategories()" style="font-size: 12px; padding: 6px 12px;">Deselect All</button>
+                                <button type="button" class="btn" onclick="resetToDefaults()" style="font-size: 12px; padding: 6px 12px;">Reset to Defaults</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group" id="custom-url-section" style="display: none;">
                         <label for="custom-url">Image/GIF URL</label>
                         <div style="display: flex; gap: 10px;">
@@ -578,6 +637,8 @@
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
+            populateAnimeCategories(); // Populate anime categories
+            loadSavedCategoryPreferences(); // Load saved category preferences
             loadImages(); // Load default images
             loadSavedApiKey(); // Load saved API key
             console.log('App initialized with infinite scroll');
@@ -717,19 +778,158 @@
             }
         }
 
+        function populateAnimeCategories() {
+            const categories = [
+                'waifu', 'neko', 'shinobu', 'megumin', 'bully', 'cuddle', 'cry', 'hug', 'awoo', 'kiss',
+                'lick', 'pat', 'smug', 'bonk', 'yeet', 'blush', 'smile', 'wave', 'highfive', 'handhold',
+                'nom', 'bite', 'glomp', 'slap', 'kill', 'kick', 'happy', 'wink', 'poke', 'dance', 'cringe'
+            ];
+            
+            const container = document.querySelector('#anime-categories-section div[style*="grid-template-columns"]');
+            if (!container) return;
+            
+            // Clear existing content
+            container.innerHTML = '';
+            
+            // Create checkboxes for each category
+            categories.forEach(category => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category-option';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `category-${category}`;
+                checkbox.value = category;
+                checkbox.onchange = function() {
+                    onCategoryChange();
+                };
+                
+                const label = document.createElement('label');
+                label.htmlFor = `category-${category}`;
+                label.textContent = category;
+                
+                categoryDiv.onclick = function(e) {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        // Manually trigger the change event
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                };
+                
+                categoryDiv.appendChild(checkbox);
+                categoryDiv.appendChild(label);
+                container.appendChild(categoryDiv);
+            });
+        }
+
+        function onCategoryChange() {
+            const source = document.getElementById('image-source').value;
+            if (source === 'anime') {
+                const selectedCategories = getSelectedCategories();
+                const picreEnabled = isPicReEnabled();
+                console.log(`Category change: ${selectedCategories.length} categories selected, pic.re: ${picreEnabled}`);
+                console.log('Selected categories:', selectedCategories);
+                
+                saveCategoryPreferences();
+                
+                // Reset image state and reload with new categories
+                imageState.currentPage = 1;
+                imageState.hasMore = true;
+                loadImages(true); // Reload images with new categories
+            }
+        }
+
+        function getSelectedCategories() {
+            const checkboxes = document.querySelectorAll('#anime-categories-section input[type="checkbox"]:checked:not(#enable-picre)');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function isPicReEnabled() {
+            return document.getElementById('enable-picre').checked;
+        }
+
+        function selectAllCategories() {
+            const checkboxes = document.querySelectorAll('#anime-categories-section input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+            });
+            onCategoryChange();
+        }
+
+        function deselectAllCategories() {
+            const checkboxes = document.querySelectorAll('#anime-categories-section input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            onCategoryChange();
+        }
+
+        function resetToDefaults() {
+            const defaultCategories = ['waifu', 'neko', 'shinobu', 'megumin'];
+            
+            // Reset pic.re toggle to enabled
+            document.getElementById('enable-picre').checked = true;
+            
+            // Reset waifu.pics categories
+            const checkboxes = document.querySelectorAll('#anime-categories-section input[type="checkbox"]:not(#enable-picre)');
+            checkboxes.forEach(cb => {
+                cb.checked = defaultCategories.includes(cb.value);
+            });
+            onCategoryChange();
+        }
+
+        function saveCategoryPreferences() {
+            const preferences = {
+                categories: getSelectedCategories(),
+                picreEnabled: isPicReEnabled()
+            };
+            localStorage.setItem('anime_preferences', JSON.stringify(preferences));
+        }
+
+        function loadSavedCategoryPreferences() {
+            const saved = localStorage.getItem('anime_preferences');
+            if (saved) {
+                try {
+                    const preferences = JSON.parse(saved);
+                    
+                    // Set pic.re toggle
+                    document.getElementById('enable-picre').checked = preferences.picreEnabled !== false; // default to true
+                    
+                    // Set category checkboxes
+                    const checkboxes = document.querySelectorAll('#anime-categories-section input[type="checkbox"]:not(#enable-picre)');
+                    checkboxes.forEach(cb => {
+                        cb.checked = (preferences.categories || []).includes(cb.value);
+                    });
+                } catch (e) {
+                    // If there's an error, use defaults
+                    resetToDefaults();
+                }
+            } else {
+                // Use defaults
+                resetToDefaults();
+            }
+        }
+
         function handleImageSourceChange() {
             const source = document.getElementById('image-source').value;
             const customSection = document.getElementById('custom-url-section');
+            const categoriesSection = document.getElementById('anime-categories-section');
             const loadMoreBtn = document.getElementById('load-more-btn');
             
             if (source === 'custom') {
                 customSection.style.display = 'block';
+                categoriesSection.style.display = 'none';
                 loadMoreBtn.style.display = 'none';
                 // Clear the grid and show instruction
                 const grid = document.getElementById('image-grid');
                 grid.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: #666;">Enter an image or GIF URL above and click Load</div>';
+            } else if (source === 'anime') {
+                customSection.style.display = 'none';
+                categoriesSection.style.display = 'block';
+                loadImages(true);
             } else {
                 customSection.style.display = 'none';
+                categoriesSection.style.display = 'none';
                 loadImages(true);
             }
         }
@@ -826,8 +1026,21 @@
             }
 
             try {
-                const response = await fetch(`/api/images?source=${source}&count=12&page=${imageState.currentPage}`);
+                let url = `/api/images?source=${source}&count=12&page=${imageState.currentPage}`;
+                
+                // Add categories and pic.re parameter for anime source
+                if (source === 'anime') {
+                    const selectedCategories = getSelectedCategories();
+                    if (selectedCategories.length > 0) {
+                        url += `&categories=${encodeURIComponent(selectedCategories.join(','))}`;
+                    }
+                    url += `&picre=${isPicReEnabled()}`;
+                }
+                
+                console.log('Fetching images from:', url);
+                const response = await fetch(url);
                 const data = await response.json();
+                console.log('Response received:', data);
 
                 if (data.error) {
                     throw new Error(data.error);
@@ -835,20 +1048,36 @@
 
                 if (reset) {
                     // First load - replace all content
-                    displayMedia(data.images.map(url => ({url, preview: url})), 'image-grid', 'image', false);
+                    if (data.images.length === 0) {
+                        // Show message when no images are available for selected categories
+                        const grid = document.getElementById('image-grid');
+                        grid.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: #666;">No images available for the selected categories. Try selecting more categories or enabling pic.re.</div>';
+                        document.getElementById('load-more-btn').style.display = 'none';
+                    } else {
+                        displayMedia(data.images.map(url => ({url, preview: url})), 'image-grid', 'image', false);
+                        
+                        imageState.currentPage++;
+                        imageState.hasMore = data.hasMore;
+                        
+                        if (!imageState.hasMore || data.images.length < 12) {
+                            document.getElementById('load-more-btn').style.display = 'none';
+                        } else {
+                            document.getElementById('load-more-btn').style.display = 'block';
+                        }
+                    }
                 } else {
                     // Append new images to existing grid
                     appendMedia(data.images.map(url => ({url, preview: url})), 'image-grid', 'image');
-                }
-
-                imageState.currentPage++;
-                imageState.hasMore = data.hasMore;
-                
-                if (!imageState.hasMore) {
-                    addEndMessage();
-                    document.getElementById('load-more-btn').style.display = 'none';
-                } else {
-                    document.getElementById('load-more-btn').style.display = 'block';
+                    
+                    imageState.currentPage++;
+                    imageState.hasMore = data.hasMore;
+                    
+                    if (!imageState.hasMore || data.images.length < 12) {
+                        addEndMessage();
+                        document.getElementById('load-more-btn').style.display = 'none';
+                    } else {
+                        document.getElementById('load-more-btn').style.display = 'block';
+                    }
                 }
                 
             } catch (error) {
@@ -884,6 +1113,14 @@
                 img.alt = `${type} ${index + 1}`;
                 img.loading = 'lazy';
                 
+                // Add masonry positioning after image loads
+                img.onload = function() {
+                    const imageHeight = this.offsetHeight;
+                    const rowHeight = 10; // matches grid-auto-rows
+                    const rowSpan = Math.ceil((imageHeight + 15) / (rowHeight + 15)); // +15 for gap
+                    mediaItem.style.gridRowEnd = `span ${rowSpan}`;
+                };
+                
                 mediaItem.appendChild(img);
                 grid.appendChild(mediaItem);
             });
@@ -906,6 +1143,14 @@
                 img.src = item.preview || item.url;
                 img.alt = `${type} ${index + 1}`;
                 img.loading = 'lazy';
+                
+                // Add masonry positioning after image loads
+                img.onload = function() {
+                    const imageHeight = this.offsetHeight;
+                    const rowHeight = 10; // matches grid-auto-rows
+                    const rowSpan = Math.ceil((imageHeight + 15) / (rowHeight + 15)); // +15 for gap
+                    mediaItem.style.gridRowEnd = `span ${rowSpan}`;
+                };
                 
                 mediaItem.appendChild(img);
                 grid.appendChild(mediaItem);
@@ -1018,7 +1263,7 @@
             }
         }
 
-        function selectMedia(url, element, type) {
+        async function selectMedia(url, element, type) {
             // Remove selection from all items in the grid
             element.parentElement.querySelectorAll('.media-item').forEach(item => {
                 item.classList.remove('selected');
@@ -1026,9 +1271,45 @@
             
             // Select this item
             element.classList.add('selected');
-            selectedMediaUrl = url;
             
-            showSuccess(`${type === 'gif' ? 'GIF' : 'Image'} selected successfully!`);
+            // For pic.re URLs, we need to resolve the final image URL to avoid redirect issues
+            if (url.includes('pic.re')) {
+                try {
+                    // Show resolving message
+                    showSuccess('Resolving image URL...');
+                    
+                    // Fetch the URL to get the final redirected image URL
+                    const response = await fetch(url, { method: 'HEAD' });
+                    selectedMediaUrl = response.url; // This will be the actual image URL
+                    console.log(`Resolved pic.re URL from ${url} to ${selectedMediaUrl}`);
+                } catch (error) {
+                    console.warn('Failed to resolve pic.re URL, using original:', error);
+                    selectedMediaUrl = url;
+                }
+            } else {
+                selectedMediaUrl = url;
+            }
+            
+            // Auto-detect if the selected image is a GIF and switch background type accordingly
+            const isGif = selectedMediaUrl.toLowerCase().endsWith('.gif') || url.toLowerCase().endsWith('.gif');
+            
+            if (isGif) {
+                // Switch to animated GIF background type
+                document.querySelector('input[name="media-type"][value="gif"]').checked = true;
+                selectedMediaType = 'gif';
+                
+                // Update the radio button UI
+                document.querySelectorAll('[name="media-type"]').forEach(radio => {
+                    const option = radio.closest('.radio-option');
+                    option.classList.remove('selected');
+                });
+                document.querySelector('[data-value="gif"]').classList.add('selected');
+                
+                updateMediaTitle();
+                showSuccess('GIF detected! Switched to Animated GIF background type.');
+            } else {
+                showSuccess(`${type === 'gif' ? 'GIF' : 'Image'} selected successfully!`);
+            }
         }
 
         async function createVideo() {

@@ -55,7 +55,7 @@ https://github.com/user-attachments/assets/84ddf208-5ce8-4fc0-9508-e35ff0c13f1f
 - Uses GIFs as the background using the tenor v2 api
 - User can input query for gif search.
 - Allow the artist of the image/gif to be credited (gui-ffmpegexe.py only)
-## How to run - clone and run using python flask or just run the .exe
+## How to run - clone and run using python flask 
 1. clone repository  ```git clone https://github.com/sankeer28/Spedup-Slowed-MV.git```
 2. open folder ```cd Spedup-Slowed-MV ```
 3. install dependencies ```pip install -r requirements.txt``` 
